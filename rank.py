@@ -3,6 +3,7 @@ import sqlite3
 import pandas as pd
 import matplotlib.pyplot as plt
 
+
 # 데이터베이스 연결 함수
 def create_connection(db_file):
     conn = None
@@ -13,7 +14,6 @@ def create_connection(db_file):
         st.error(f"데이터베이스 연결 중 에러 발생: {e}")
     return conn
 
-
 # 참가자 추가 함수
 def add_player(conn, name, experience):
     sql = ''' INSERT INTO Players(Name, Experience)
@@ -22,7 +22,6 @@ def add_player(conn, name, experience):
     cur.execute(sql, (name, experience))
     conn.commit()
     return cur.lastrowid
-
 
 # 참가자 목록 조회 함수
 def get_players(conn):
@@ -171,11 +170,7 @@ def calculate_tournament_scores(matches):
 # 대회 결과 출력 함수
 def display_tournament_results(scores,date):
     # 점수에 따라 순위 결정
-    conn = st.connection(
-        "local_db",
-        type="sql",
-        url="sqlite:///fsi_rank.db"
-    )
+    conn = create_connection('fsi_rank.db')
     
 # 사용자 등록 페이지
 def page_add_player():
@@ -183,11 +178,7 @@ def page_add_player():
     name = st.text_input('이름', placeholder='참가자 이름을 입력하세요.')
     experience = st.number_input('경험치', min_value=0, value=0, step=1)
     if st.button('참가자 추가'):
-        conn = st.connection(
-        "local_db",
-        type="sql",
-        url="sqlite:///fsi_rank.db"
-        )
+        conn = create_connection('fsi_rank.db')
         if conn is not None:
             add_player(conn, name, experience)
             st.success(f'참가자 "{name}"가 성공적으로 추가되었습니다.')
@@ -198,11 +189,7 @@ def page_add_player():
 # 사용자 정보 조회 페이지
 def page_view_players():
     st.subheader("정보 조회")
-    conn = st.connection(
-        "local_db",
-        type="sql",
-        url="sqlite:///fsi_rank.db"
-    )
+    conn = create_connection('fsi_rank.db')
     if conn is not None:
         players = get_players(conn)
         df_players = pd.DataFrame(players, columns=['ID', '이름', '경험치'])
@@ -375,11 +362,7 @@ def page_view_players():
 def page_add_match():
     
     st.subheader("경기 결과 등록")
-    conn = st.connection(
-    "local_db",
-    type="sql",
-    url="sqlite:///fsi_rank.db"
-    )
+    conn = create_connection('fsi_rank.db')
     
     if conn is not None:
         players = get_players(conn)  # 참가자 정보 가져오기
@@ -440,11 +423,7 @@ def page_add_match():
     
     # 모든 경기 정보 입력 후 결과 저장 버튼
     if st.button("모든 경기 결과 저장"):
-        conn = st.connection(
-            "local_db",
-            type="sql",
-            url="sqlite:///fsi_rank.db"
-        )
+        conn = create_connection('fsi_rank.db')
         if conn is not None:
             for match_info in all_matches:
             # 각 경기 정보에 따라 경기 결과 및 경험치 변경을 처리
@@ -502,13 +481,7 @@ def page_view_ranking():
         </style>
     """, unsafe_allow_html=True)
     
-    # conn = create_connection('fsi_rank.db')
-    conn = st.connection(
-        "local_db",
-        type="sql",
-        url="sqlite:///fsi_rank.db"
-    )
-
+    conn = create_connection('fsi_rank.db')
     if conn is not None:
         cur = conn.cursor()
         cur.execute("SELECT PlayerID, Name, Experience FROM Players ORDER BY Experience DESC")
