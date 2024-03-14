@@ -2,6 +2,7 @@ import streamlit as st
 import sqlite3
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FuncFormatter
 
 
 # 데이터베이스 연결 함수
@@ -206,44 +207,49 @@ def page_view_players():
         selected_name = st.selectbox("참가자를 선택하세요", player_names)
         selected_id = df_players[df_players['이름'] == selected_name]['ID'].iloc[0]
         selected_exp = df_players[df_players['이름'] == selected_name]['경험치'].iloc[0]
-        level_rate = min(selected_exp / 100, 1)  # 프로그레스 바의 최대값을 1로 제한
-        # 프로그레스 바 표시
-        col1, col2 = st.columns([1, 5])
-        with col1:
-            st.markdown(f"<h3 style='color: black;'>Level {selected_exp}</h3>", unsafe_allow_html=True)
-        with col2:
-            st.progress(level_rate)
+        
+        st.markdown(f"<h3 style='color: black;'>Level {selected_exp}</h3>", unsafe_allow_html=True)
 
         exp_history = get_player_experience_history(conn, selected_id)
         if exp_history:
             df_exp_history = pd.DataFrame(exp_history, columns=['날짜', '경험치'])
-            st.write(f"{selected_name}의 Level 그래프")
             plt.figure(figsize=(10, 4))
             plt.plot(df_exp_history.index + 1, df_exp_history['경험치'], marker='o')
-            plt.xlabel('index')
+            
+            # 각 데이터 포인트에 대한 값 표시
+            for i, exp in enumerate(df_exp_history['경험치']):
+                plt.text(i + 1, exp + 0.025 * max(df_exp_history['경험치']),  # 데이터 포인트보다 약간 위
+                        f'{exp}',  # 표시할 텍스트
+                        color='purple',  # 글자 색상
+                        va='center',  # 세로 정렬
+                        ha='center',  # 가로 정렬
+                        fontdict={'weight': 'bold', 'size': 9})  # 글자 스타일
+            plt.xlabel('Game Count')
             plt.ylabel('LEVEL')
             plt.xticks(range(1, len(df_exp_history) + 1))  # x축 눈금을 이벤트 번호에 맞춰 조정
-
+            plt.gca().yaxis.set_major_formatter(FuncFormatter(lambda x, _: f'{int(x)}'))
             st.pyplot(plt)
         else:
             st.write("경험치 변화 기록이 없습니다.")
             
-        # 버튼을 만들어 사용자 선택 받기
         with st.container():
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                show_doubles = st.button("복식")
-            with col2:
-                show_singles = st.button("단식")
-            with col3:
-                show_all = st.button("전체")
+            # '복식', '단식', '전체' 중 하나를 선택할 수 있는 라디오 버튼 생성
+            match_option = st.radio(
+                "Matches Filter",
+                ('전체', '단식', '복식'),
+                horizontal=True
+            )
+
+            # 사용자 선택에 따라 변수 설정
+            show_doubles = match_option == '복식'
+            show_singles = match_option == '단식'
+            show_all = match_option == '전체'
         
         matches = get_player_matches(conn, selected_id)
         
         if matches:
             # '날짜', '복식 여부', 'A팀 점수', 'B팀 점수', '승리 팀', 'A팀원1', 'A팀원2', 'B팀원1', 'B팀원2', '결과' 컬럼을 포함하여 DataFrame 생성
             df_matches = pd.DataFrame(matches, columns=['날짜', '복식 여부', 'A팀 점수', 'B팀 점수', '승리 팀', 'A팀원1', 'A팀원2', 'B팀원1', 'B팀원2', '결과'])
-            st.write(f"{selected_name}의 경기 기록")
 
             # 경기 결과가 최신 순으로 정렬되도록 날짜 기준 내림차순 정렬
             df_matches = df_matches.sort_values(by='날짜', ascending=False)
