@@ -663,6 +663,7 @@ def page_view_ranking():
                     .win-loss-stats {
                         font-size: 13px; /* 승패 글자 크기 조정 */
                         color: #ffffff; /* 글자 색상 */
+                        font-weight: bold; /* 글꼴 굵기 */
                         margin: 0 5px; /* 좌우 마진 조정 */
                     }
                     .player-level-box {
