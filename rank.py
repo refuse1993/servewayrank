@@ -178,7 +178,7 @@ def calculate_tournament_scores(matches):
 def page_add_player():
     st.subheader("새 참가자 등록")
     name = st.text_input('이름', placeholder='참가자 이름을 입력하세요.')
-    experience = st.number_input('경험치', min_value=0, value=0, step=1)
+    experience = st.number_input('경험치', min_value=0,max_value=100, value=10, step=1)
     if st.button('참가자 추가'):
         conn = create_connection('fsi_rank.db')
         if conn is not None:
