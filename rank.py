@@ -503,7 +503,7 @@ def page_view_ranking():
 
         # 각 참가자의 티어 이미지 표시
         for index, row in df.iterrows():
-            tier = str(row['경험치'])[0] if int(str(row['경험치'])[0]) >= 1 else '0'
+            tier = str(row['경험치'])[0] if int(str(row['경험치'])[0]) >= 10 else '0'
             tier_image = tier_images.get(tier, 'icon/0.PNG')  # 해당 티어의 이미지 경로 가져오기, 없는 경우 기본 이미지 사용
             
             # HTML과 CSS를 사용하여 커스텀 스타일링 적용
