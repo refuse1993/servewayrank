@@ -277,7 +277,7 @@ def page_view_players():
             """, unsafe_allow_html=True)
 
             # 경기 정보 및 결과 표시
-            col1, col2, col3 = st.columns(4)
+            col1, col2, col3 = st.columns(3)
 
             with col1:
                 st.markdown(f"""
