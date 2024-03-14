@@ -19,7 +19,13 @@ def reset_table(conn, table_name):
     cur = conn.cursor()
     cur.execute(f"DELETE FROM {table_name}")  # Be cautious with this operation
     conn.commit()
-    
+
+def get_table_select(conn, table_name):
+    cur = conn.cursor()
+    cur.execute(f"SELECT * FROM {table_name}")  # Be cautious with this operation
+    rows = cur.fetchall()
+    return rows
+
 # 참가자 추가 함수
 def add_player(conn, name, experience):
     sql = ''' INSERT INTO Players(Name, Experience)
@@ -535,6 +541,16 @@ def page_setting():
     if st.button("DB 테이블 초기화"):
         reset_table(conn, table_name)
         st.success(f"Table {table_name} has been reset")
+    
+    if st.button("DB 테이블 정보 조회") :
+        data = get_table_select(conn,table_name)
+        # Convert the data into a pandas DataFrame
+        columns = [description[0] for description in data.description]
+        # Convert the data into a pandas DataFrame using dynamic column names
+        df = pd.DataFrame(data, columns=columns)
+
+        # Display the DataFrame as a table in Streamlit
+        st.table(df)
     
     
 # 메인 함수: 페이지 선택 및 렌더링
