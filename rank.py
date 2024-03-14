@@ -668,7 +668,7 @@ def page_view_ranking():
                     }
                     .player-level-box {
                         display: inline-block; /* 인라인 블록으로 설정 */
-                        padding: 5px 10px; /* 패딩 조정 */
+                        padding: 5px 5px; /* 패딩 조정 */
                         border-radius: 10px; /* 둥근 모서리 */
                         background-color: #333333; /* 박스 배경 색상 */
                         color: #ffffff; /* 글자 색상 */
@@ -706,7 +706,7 @@ def page_view_ranking():
                         font-weight: bold;
                     }}
                     .ranking-number {{
-                        font-size: 30px; /* 랭킹 크기 */
+                        font-size: 26px; /* 랭킹 크기 */
                         color: #ffffff; /* 랭킹 색상 */
                         font-weight: bold; /* 글꼴 굵기 */
                         margin-right: 10px;
@@ -714,7 +714,7 @@ def page_view_ranking():
                     .player-name {{
                         flex-grow: 1; /* 이름이 차지하는 공간을 최대로 */
                         margin: 0 20px; /* 좌우 마진 */
-                        font-size: 20px; /* 이름 크기 */
+                        font-size: 18px; /* 이름 크기 */
                         color: #ffffff; /* 이름 색상 */
                         font-weight: bold; /* 글꼴 굵기 */
                     }}
