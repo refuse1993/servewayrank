@@ -22,9 +22,10 @@ def reset_table(conn, table_name):
 
 def get_table_select(conn, table_name):
     cur = conn.cursor()
-    cur.execute(f"SELECT * FROM {table_name}")  # Be cautious with this operation
+    cur.execute(f"SELECT * FROM {table_name}")
     rows = cur.fetchall()
-    return rows
+    columns = [desc[0] for desc in cur.description]  # 컬럼 이름 추출
+    return rows, columns
 
 # 참가자 추가 함수
 def add_player(conn, name, experience):
@@ -542,14 +543,9 @@ def page_setting():
         reset_table(conn, table_name)
         st.success(f"Table {table_name} has been reset")
     
-    if st.button("DB 테이블 정보 조회") :
-        data = get_table_select(conn,table_name)
-        # Convert the data into a pandas DataFrame
-        columns = [description[0] for description in data.description]
-        # Convert the data into a pandas DataFrame using dynamic column names
+    if st.button("DB 테이블 정보 조회"):
+        data, columns = get_table_select(conn, table_name)  # 컬럼 이름도 함께 받아옴
         df = pd.DataFrame(data, columns=columns)
-
-        # Display the DataFrame as a table in Streamlit
         st.table(df)
     
     
