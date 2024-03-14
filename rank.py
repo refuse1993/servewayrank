@@ -493,7 +493,7 @@ def page_view_ranking():
 
         for index, (player_id, name, experience) in enumerate(ranking):
             tier = str(experience)[0] if experience >= 10 else '0'
-            tier_image = f'./servewayrank/static/{tier}.png'
+            tier_image = f'static/{tier}.png'
             
             st.write(tier_image)
             # HTML과 CSS를 사용하여 커스텀 스타일링 적용
