@@ -14,6 +14,12 @@ def create_connection(db_file):
         st.error(f"데이터베이스 연결 중 에러 발생: {e}")
     return conn
 
+# Function to reset a table
+def reset_table(conn, table_name):
+    cur = conn.cursor()
+    cur.execute(f"DELETE FROM {table_name}")  # Be cautious with this operation
+    conn.commit()
+    
 # 참가자 추가 함수
 def add_player(conn, name, experience):
     sql = ''' INSERT INTO Players(Name, Experience)
@@ -517,6 +523,19 @@ def page_view_ranking():
     else:
         st.error("랭킹 정보를 가져오는 데 실패했습니다.")
 
+def page_setting():
+    st.subheader("설정")
+    conn = create_connection('fsi_rank.db')
+
+    # Dropdown to select a table
+    table_name = st.selectbox("초기화 할 테이블", ["Players", "Matches", "ExperienceHistory", "EquipmentHistory"])
+
+    # Button to reset the table
+    if st.button("DB 테이블 초기화"):
+        reset_table(conn, table_name)
+        st.success(f"Table {table_name} has been reset")
+    
+    
 # 메인 함수: 페이지 선택 및 렌더링
 def main():
     st.sidebar.title("메뉴")
@@ -531,6 +550,9 @@ def main():
         page_add_match()
     elif choice == "사용자 등록":
         page_add_player()
+    elif choice == "설정":
+        page_setting()
+        
 
 if __name__ == '__main__':
     main()
