@@ -413,18 +413,18 @@ def page_add_match():
                     team_b_player2_name = st.selectbox("B팀원2", list(player_options.keys()), key=f"team_b_p2_{i}")
                     team_b_player2_id = player_options[team_b_player2_name]
                     
-        # 입력받은 경기 정보 저장
-        match_info = {
-            "date": date,
-            "is_tournament": is_tournament,
-            "is_doubles": is_doubles,
-            "team_a": [team_a_player1_id] + ([team_a_player2_id] if is_doubles else []),
-            "team_b": [team_b_player1_id] + ([team_b_player2_id] if is_doubles else []),
-            "team_a_score": team_a_score,
-            "team_b_score": team_b_score,
-            "winning_team": 'A' if team_a_score > team_b_score else 'B'
-        }
-        all_matches.append(match_info)
+            # 입력받은 경기 정보 저장
+            match_info = {
+                "date": date,
+                "is_tournament": is_tournament,
+                "is_doubles": is_doubles,
+                "team_a": [team_a_player1_id] + ([team_a_player2_id] if is_doubles else []),
+                "team_b": [team_b_player1_id] + ([team_b_player2_id] if is_doubles else []),
+                "team_a_score": team_a_score,
+                "team_b_score": team_b_score,
+                "winning_team": 'A' if team_a_score > team_b_score else 'B'
+            }
+            all_matches.append(match_info)
 
     
     # 모든 경기 정보 입력 후 결과 저장 버튼
