@@ -479,9 +479,6 @@ def page_view_ranking():
     # 페이지 스타일 설정
     st.markdown("""
         <style>
-            .ranking-row { display: flex; align-items: center; }
-            .tier-image { width: 40px; height: 40px; border-radius: 50%; }
-            .ranking-text { color: white; padding-left: 20px; }
         </style>
     """, unsafe_allow_html=True)
 
@@ -493,16 +490,18 @@ def page_view_ranking():
 
         for index, (player_id, name, experience) in enumerate(ranking):
             tier = str(experience)[0] if experience >= 10 else '0'
-            tier_image = f'static/{tier}.png'
+            tier_image_path = f'icon/{tier}.png'
             
-            st.write(tier_image)
-            # HTML과 CSS를 사용하여 커스텀 스타일링 적용
-            st.markdown(f"""
-                <div class="ranking-row">
-                    <img src="{tier_image}" class="tier-image">
-                    <div class="ranking-text">{index+1}등: {name} - Level {experience}</div>
-                </div>
-            """, unsafe_allow_html=True)
+            # 컬럼 생성: 이미지 | 랭킹, 이름, 레벨, 전적
+            col1, col2 = st.columns([1, 4])
+
+            with col1:
+                st.image(tier_image_path, width=40)  # 이미지 표시
+
+            with col2:
+                # 랭킹, 이름, 레벨, 전적 표시
+                st.markdown(f"<div class='ranking-text'>{index+1}등: {name} - Level {experience}</div>", unsafe_allow_html=True)
+
         conn.close()
     else:
         st.error("랭킹 정보를 가져오는 데 실패했습니다.")
