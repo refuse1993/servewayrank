@@ -489,21 +489,25 @@ def page_view_ranking():
 
         # 티어별 이미지 경로 딕셔너리 정의
         tier_images = {
-            '1': 'icon/4.PNG',
-            '2': 'icon/4.PNG',
-            '3': 'icon/4.PNG',
-            '4': 'icon/8.PNG',
-            '5': 'icon/8.PNG',
-            '6': 'icon/8.PNG',
-            '7': 'icon/10.PNG',
-            '8': 'icon/10.PNG',
-            '9': 'icon/10.PNG',
+            '0': 'icon/0.PNG',
+            '1': 'icon/1.PNG',
+            '2': 'icon/2.PNG',
+            '3': 'icon/3.PNG',
+            '4': 'icon/4.PNG',
+            '5': 'icon/5.PNG',
+            '6': 'icon/6.PNG',
+            '7': 'icon/7.PNG',
+            '8': 'icon/8.PNG',
+            '9': 'icon/9.PNG',
         }
 
         # 각 참가자의 티어 이미지 표시
         for index, row in df.iterrows():
-            tier = str(row['경험치'])[0]  # 경험치의 첫 번째 숫자로 티어 결정
-            tier_image = tier_images.get(tier, 'icon/4.PNG')  # 해당 티어의 이미지 경로 가져오기, 없는 경우 기본 이미지 사용
+            if str(row['경험치'])[0] >= 10:
+                tier = str(row['경험치'])[0]
+            else :
+                tier = str(0)
+            tier_image = tier_images.get(tier, 'icon/0.PNG')  # 해당 티어의 이미지 경로 가져오기, 없는 경우 기본 이미지 사용
             
             # HTML과 CSS를 사용하여 커스텀 스타일링 적용
             col1, col2 = st.columns([1, 4])
