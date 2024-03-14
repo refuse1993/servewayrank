@@ -244,8 +244,6 @@ def page_view_players():
                 <img src="data:image/png;base64,{tier_image_base64}" style="width: 70px; height: 70px; object-fit: contain; border-radius: 50%;">
                 <div class="level-text">Level {selected_exp}</div></div>""", unsafe_allow_html=True)
             
-
-
         exp_history = get_player_experience_history(conn, selected_id)
         if exp_history:
             df_exp_history = pd.DataFrame(exp_history, columns=['날짜', '경험치'])
@@ -608,11 +606,12 @@ def page_view_ranking():
         elif index == 1:  # 2등
             return "linear-gradient(to right, #2193b0, #6dd5ed)"
         elif index == 2:  # 3등
-            return "linear-gradient(to right, #a8e063, #56ab2f)"
+            return "linear-gradient(to right, #4A9C1A, #56ab2f)"
         else:  # 그 외
             return "linear-gradient(to right, #bdc3c7, #2c3e50)"
 
     conn = create_connection('fsi_rank.db')
+    
     if conn is not None:
         cur = conn.cursor()
         cur.execute("SELECT PlayerID, Name, Experience FROM Players ORDER BY Experience DESC")
@@ -624,7 +623,65 @@ def page_view_ranking():
             tier_image_base64 = get_image_base64(tier_image_path)
             background = get_background(index)
             
+            
+    
+            matches = get_player_matches(conn, player_id)
+        
+            if matches:
+                # '날짜', '복식 여부', 'A팀 점수', 'B팀 점수', '승리 팀', 'A팀원1', 'A팀원2', 'B팀원1', 'B팀원2', '결과' 컬럼을 포함하여 DataFrame 생성
+                df_matches = pd.DataFrame(matches, columns=['날짜', '복식 여부', 'A팀 점수', 'B팀 점수', '승리 팀', 'A팀원1', 'A팀원2', 'B팀원1', 'B팀원2', '결과'])
 
+                # 경기 결과가 최신 순으로 정렬되도록 날짜 기준 내림차순 정렬
+                df_matches = df_matches.sort_values(by='날짜', ascending=False)
+
+                # 복식 경기 데이터만 필터링
+                doubles_matches = df_matches[df_matches['복식 여부'] == True]
+                # 단식 경기 데이터만 필터링
+                singles_matches = df_matches[df_matches['복식 여부'] == False]
+
+                # 복식 승리 횟수 계산
+                doubles_wins = doubles_matches[doubles_matches['결과'] == '승리'].shape[0]
+                # 단식 승리 횟수 계산
+                singles_wins = singles_matches[singles_matches['결과'] == '승리'].shape[0]
+
+                # 전체 승리 횟수 (복식 + 단식)
+                total_wins = doubles_wins + singles_wins
+                total_matches = len(df_matches) if len(df_matches) > 0 else 0
+                # 승률 계산 (승리 횟수 / 전체 경기 횟수)
+                total_win_rate = total_wins / len(df_matches) if len(df_matches) > 0 else 0
+            
+
+                # 승률 표시를 위한 스타일 설정
+                # 스타일 설정
+                st.markdown("""
+                <style>
+                    .win-rate {
+                        font-size: 18px; /* 승률 글자 크기 */
+                        font-weight: bold; /* 글꼴 굵기 */
+                        margin-right: 5px; /* 우측 마진 */
+                    }
+                    .win-loss-stats {
+                        font-size: 13px; /* 승패 글자 크기 조정 */
+                        color: #ffffff; /* 글자 색상 */
+                        margin: 0 5px; /* 좌우 마진 조정 */
+                    }
+                    .player-level-box {
+                        display: inline-block; /* 인라인 블록으로 설정 */
+                        padding: 5px 10px; /* 패딩 조정 */
+                        border-radius: 10px; /* 둥근 모서리 */
+                        background-color: #333333; /* 박스 배경 색상 */
+                        color: #ffffff; /* 글자 색상 */
+                        font-weight: bold; /* 글꼴 굵기 */
+                        text-align: center; /* 텍스트 중앙 정렬 */
+                    }
+                </style>
+            """, unsafe_allow_html=True)
+
+            
+            # 승률에 따른 색상 조정
+            win_rate_color = "#A8CAE1" if total_win_rate >= 0.5 else "#CF2E11"
+
+            
             # 페이지 스타일 설정 (각 랭킹마다 다른 배경색 적용)
             st.markdown(f"""
                 <style>
@@ -656,13 +713,8 @@ def page_view_ranking():
                     .player-name {{
                         flex-grow: 1; /* 이름이 차지하는 공간을 최대로 */
                         margin: 0 20px; /* 좌우 마진 */
-                        font-size: 23px; /* 이름 크기 */
+                        font-size: 20px; /* 이름 크기 */
                         color: #ffffff; /* 이름 색상 */
-                        font-weight: bold; /* 글꼴 굵기 */
-                    }}
-                    .player-level {{
-                        font-size: 20px; /* 레벨 크기 */
-                        color: #ffffff; /* 레벨 색상 */
                         font-weight: bold; /* 글꼴 굵기 */
                     }}
                 </style>
@@ -674,7 +726,9 @@ def page_view_ranking():
                     <div class="ranking-number">{index+1}</div>
                     <img src="data:image/png;base64,{tier_image_base64}" style="width: 60px; height: 60px; object-fit: contain; border-radius: 50%;">
                     <div class="player-name">{name}</div>
-                    <div class="player-level">Level {experience}</div>
+                    <div class="win-rate" style="color: {win_rate_color};">{total_win_rate * 100:.1f}%</div>
+                    <div class="win-loss-stats">{total_wins}승 / {total_matches - total_wins}패</div> <!-- 승패 수 표현 변경 -->
+                    <div class="player-level-box">Level {experience}</div> <!-- 레벨 박스화 및 스타일 적용 -->
                 </div>
             """, unsafe_allow_html=True)
             
