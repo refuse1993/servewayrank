@@ -476,11 +476,16 @@ def page_add_match():
 def page_view_ranking():
     st.subheader("참가자 랭킹")
 
-    # 페이지 스타일 설정
-    st.markdown("""
-        <style>
-        </style>
-    """, unsafe_allow_html=True)
+    # 랭킹에 따른 배경색 설정
+    def get_background(index):
+        if index == 0:  # 1등
+            return "linear-gradient(to right, #cc2b5e, #753a88)"
+        elif index == 1:  # 2등
+            return "linear-gradient(to right, #2193b0, #6dd5ed)"
+        elif index == 2:  # 3등
+            return "linear-gradient(to right, #a8e063, #56ab2f)"
+        else:  # 그 외
+            return "linear-gradient(to right, #bdc3c7, #2c3e50)"
 
     conn = create_connection('fsi_rank.db')
     if conn is not None:
@@ -491,17 +496,59 @@ def page_view_ranking():
         for index, (player_id, name, experience) in enumerate(ranking):
             tier = str(experience)[0] if experience >= 10 else '0'
             tier_image_path = f'icon/{tier}.png'
+            background = get_background(index)
+
+            # 페이지 스타일 설정 (각 랭킹마다 다른 배경색 적용)
+            st.markdown(f"""
+                <style>
+                    .ranking-row-{index} {{
+                        display: flex;
+                        align-items: center;
+                        margin-bottom: 10px;
+                        padding: 10px;
+                        border-radius: 10px;
+                        background: {background};
+                        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                    }}
+                    .tier-image {{
+                        width: 40px;
+                        height: 40px;
+                        border-radius: 50%;
+                        margin-right: 10px;
+                    }}
+                    .ranking-text {{
+                        color: white;
+                        font-weight: bold;
+                    }}
+                    .ranking-number {{
+                        font-size: 24px; /* 랭킹 크기 */
+                        color: #ffffff; /* 랭킹 색상 */
+                        font-weight: bold; /* 글꼴 굵기 */
+                    }}
+                    .player-name {{
+                        flex-grow: 1; /* 이름이 차지하는 공간을 최대로 */
+                        margin: 0 20px; /* 좌우 마진 */
+                        font-size: 18px; /* 이름 크기 */
+                        color: #ffffff; /* 이름 색상 */
+                        font-weight: bold; /* 글꼴 굵기 */
+                    }}
+                    .player-level {{
+                        font-size: 20px; /* 레벨 크기 */
+                        color: #ffffff; /* 레벨 색상 */
+                        font-weight: bold; /* 글꼴 굵기 */
+                    }}
+                </style>
+            """, unsafe_allow_html=True)
+
+            # HTML과 CSS를 사용하여 커스텀 스타일링 적용
+            st.markdown(f"""
+                <div class="ranking-row-{index}">
+                    <div class="ranking-number">{index+1}</div>
+                    <div class="player-name">{name}</div>
+                    <div class="player-level">Level {experience}</div>
+                </div>
+            """, unsafe_allow_html=True)
             
-            # 컬럼 생성: 이미지 | 랭킹, 이름, 레벨, 전적
-            col1, col2 = st.columns([1, 4])
-
-            with col1:
-                st.image(tier_image_path, width=40)  # 이미지 표시
-
-            with col2:
-                # 랭킹, 이름, 레벨, 전적 표시
-                st.markdown(f"<div class='ranking-text'>{index+1}등: {name} - Level {experience}</div>", unsafe_allow_html=True)
-
         conn.close()
     else:
         st.error("랭킹 정보를 가져오는 데 실패했습니다.")
