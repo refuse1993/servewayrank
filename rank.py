@@ -447,11 +447,9 @@ def page_add_match():
                 match_info['team_b_score'],
                 match_info['winning_team']
             )
-
-            # add_match 함수를 호출하여 경기 결과를 Matches 테이블에 저장
-            
-            winning_team = match_info['winning_team']
-            update_experience(conn, match_details, winning_team)
+                # add_match 함수를 호출하여 경기 결과를 Matches 테이블에 저장     
+                winning_team = match_info['winning_team']
+                update_experience(conn, match_details, winning_team)
         st.success("모든 경기 결과가 저장되었습니다.")
         
         if is_tournament:
