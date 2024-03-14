@@ -167,10 +167,6 @@ def calculate_tournament_scores(matches):
                 scores[player] = scores.get(player, 0) + (100 if match['winning_team'] == 'B' else 50)
     return scores
 
-# 대회 결과 출력 함수
-def display_tournament_results(scores,date):
-    # 점수에 따라 순위 결정
-    conn = create_connection('fsi_rank.db')
     
 # 사용자 등록 페이지
 def page_add_player():
@@ -281,12 +277,9 @@ def page_view_players():
             """, unsafe_allow_html=True)
 
             # 경기 정보 및 결과 표시
-            col1, col2, col3, col4 = st.columns(4)
+            col1, col2, col3 = st.columns(4)
 
             with col1:
-                st.markdown(f"<div class='info-box'><p class='info-text'>경기 내용: <span class='highlight'>{selected_name}</span></p></div>", unsafe_allow_html=True)
-
-            with col2:
                 st.markdown(f"""
                     <div class='info-box'>
                         <p class='info-text'>전체 경기: <span class='highlight'>{len(df_matches)}</span></p>
@@ -294,7 +287,7 @@ def page_view_players():
                         <p class='info-text'>승률: <span class='highlight'>{total_win_rate * 100:.2f}%</span></p>
                     </div>
                 """, unsafe_allow_html=True)
-            with col3:
+            with col2:
                 st.markdown(f"""
                     <div class='info-box'>
                         <p class='info-text'>단식 경기: <span class='highlight'>{len(singles_matches)}</span></p>
@@ -302,7 +295,7 @@ def page_view_players():
                         <p class='info-text'>승률: <span class='highlight'>{singles_win_rate * 100:.2f}%</span></p>
                     </div>
                 """, unsafe_allow_html=True)
-            with col4:
+            with col3:
                 st.markdown(f"""
                     <div class='info-box'>
                         <p class='info-text'>복식 경기: <span class='highlight'>{len(doubles_matches)}</span></p>
