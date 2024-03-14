@@ -333,16 +333,52 @@ def page_add_match():
     
         conn.close()
 
-# 랭킹 페이지
 def page_view_ranking():
     st.subheader("참가자 랭킹")
+
+    # 페이지 스타일 설정
+    st.markdown("""
+        <style>
+            .ranking-row { display: flex; align-items: center; }
+            .ranking-text { color: white; padding-left: 20px; }
+            .tier-image { border-radius: 50%; }
+        </style>
+    """, unsafe_allow_html=True)
+    
     conn = create_connection('fsi_rank.db')
     if conn is not None:
         cur = conn.cursor()
         cur.execute("SELECT PlayerID, Name, Experience FROM Players ORDER BY Experience DESC")
         ranking = cur.fetchall()
         df = pd.DataFrame(ranking, columns=['ID', '이름', '경험치'])
-        st.table(df)
+
+        # 티어별 이미지 경로 딕셔너리 정의
+        tier_images = {
+            '1': 'icon/4.PNG',
+            '2': 'icon/4.PNG',
+            '3': 'icon/4.PNG',
+            '4': 'icon/8.PNG',
+            '5': 'icon/8.PNG',
+            '6': 'icon/8.PNG',
+            '7': 'icon/10.PNG',
+            '8': 'icon/10.PNG',
+            '9': 'icon/10.PNG',
+        }
+
+        # 각 참가자의 티어 이미지 표시
+        for index, row in df.iterrows():
+            tier = str(row['경험치'])[0]  # 경험치의 첫 번째 숫자로 티어 결정
+            tier_image = tier_images.get(tier, 'icon/4.PNG')  # 해당 티어의 이미지 경로 가져오기, 없는 경우 기본 이미지 사용
+            print({tier_image})
+            # HTML과 CSS를 사용하여 커스텀 스타일링 적용
+            st.markdown(f"""
+                <div style="background-color:#333; padding: 10px; border-radius: 10px; margin: 10px 0;">
+                    <img src="{tier_image}" style="width: 50px; float: left; margin-right: 20px;">
+                    <p style="color:#fff; font-size: 20px; line-height: 50px;">
+                        {row['이름']} - <span style="font-weight:bold;">Level {row['경험치']}</span>
+                    </p>
+                </div>
+            """, unsafe_allow_html=True)
         conn.close()
     else:
         st.error("랭킹 정보를 가져오는 데 실패했습니다.")
