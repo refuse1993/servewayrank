@@ -3,7 +3,7 @@ import sqlite3
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FuncFormatter
-
+import base64
 
 # 데이터베이스 연결 함수
 def create_connection(db_file):
@@ -14,6 +14,10 @@ def create_connection(db_file):
     except Exception as e:
         st.error(f"데이터베이스 연결 중 에러 발생: {e}")
     return conn
+
+def get_image_base64(path):
+    with open(path, "rb") as img_file:
+        return base64.b64encode(img_file.read()).decode()
 
 # Function to reset a table
 def reset_table(conn, table_name):
@@ -87,7 +91,6 @@ def calculate_exp_changes(conn, player_id, player_exp_changes, date):
 
     conn.commit()
 
-
 def get_player_experience_history(conn, player_id):
     cur = conn.cursor()
     player_id_int = int(player_id)
@@ -143,7 +146,10 @@ def update_experience(conn, match_details, winning_team):
     player_experiences = dict(cur.fetchall())
 
     # 각 참가자의 티어 계산 (경험치의 첫 자리수)
-    player_tiers = {player_id: int(str(exp)[0]) for player_id, exp in player_experiences.items()}
+    player_tiers = {
+    player_id: 0 if exp < 10 else int(str(exp)[0])
+    for player_id, exp in player_experiences.items()   
+    }
 
     # 평균 티어 계산
     avg_tier = round(sum(player_tiers.values()) / len(player_tiers))
@@ -154,21 +160,20 @@ def update_experience(conn, match_details, winning_team):
 
         # 티어와 평균티어의 차이를 기반으로 가중치 다시 계산
         tier_difference = avg_tier - player_tier
-        weight = tier_difference / 2  # 티어 차이를 반으로 줄여 가중치로 사용
+        weight = tier_difference  # 티어 차이를 반으로 줄여 가중치로 사용
 
         # 승리 팀과 패배 팀 결정
         if (player_id in team_a_players and winning_team == 'A') or (player_id in team_b_players and winning_team == 'B'):
             # 승리 시 경험치 상승 + 가중치 적용, 반올림
-            exp_change = round(3 + max(0, weight))
+            exp_change = round(3 + weight)
         else:
             # 패배 시 경험치 하락 - 가중치 적용, 반올림
-            exp_change = round(-1 - max(0, -weight))
+            exp_change = round(-2 - (-weight))
 
         exp_changes[player_id] = exp_change
 
     # 경험치 변경 적용
     add_match(conn, match_details, exp_changes)
-
 
 # 대회 점수 계산 및 순위 결정 함수
 def calculate_tournament_scores(matches):
@@ -180,13 +185,12 @@ def calculate_tournament_scores(matches):
             for player in match['team_b']:
                 scores[player] = scores.get(player, 0) + (100 if match['winning_team'] == 'B' else 50)
     return scores
-
-    
+  
 # 사용자 등록 페이지
 def page_add_player():
     st.subheader("새 참가자 등록")
     name = st.text_input('이름', placeholder='참가자 이름을 입력하세요.')
-    experience = st.number_input('경험치', min_value=0,max_value=100, value=10, step=1)
+    experience = 10
     if st.button('참가자 추가'):
         conn = create_connection('fsi_rank.db')
         if conn is not None:
@@ -208,7 +212,39 @@ def page_view_players():
         selected_id = df_players[df_players['이름'] == selected_name]['ID'].iloc[0]
         selected_exp = df_players[df_players['이름'] == selected_name]['경험치'].iloc[0]
         
-        st.markdown(f"<h3 style='color: black;'>Level {selected_exp}</h3>", unsafe_allow_html=True)
+        tier = str(selected_exp)[0] if selected_exp >= 10 else '0'
+        tier_image_path = f'icon/{tier}.png'
+        tier_image_base64 = get_image_base64(tier_image_path)
+            
+        st.markdown(f"""
+            <style>
+                .player-info {{
+                    display: flex;
+                    align-items: center;
+                    margin-bottom: 10px;
+                    padding: 10px;
+                    border-radius: 10px;
+                    background: linear-gradient(to right, #cc2b5e, #753a88); /* 그라디언트 배경 */
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.1); /* 박스 그림자 */
+                }}
+                .level-text {{
+                    color: #ffffff; /* 글자 색상 */
+                    margin-left: 20px; /* 이미지와 텍스트 사이의 간격 */
+                    font-size: 24px; /* 글자 크기 */
+                    font-weight: bold; /* 글자 굵기 */
+                    text-shadow: 2px 2px 4px rgba(0,0,0,0.5); /* 텍스트 그림자 */
+                    background: -webkit-linear-gradient(#fff, #fff); /* 텍스트 그라디언트 색상 */
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent; /* 텍스트 그라디언트 색상을 위해 필요 */
+                }}
+            </style>
+        """, unsafe_allow_html=True)
+
+        st.markdown(f"""<div class="player-info">
+                <img src="data:image/png;base64,{tier_image_base64}" style="width: 70px; height: 70px; object-fit: contain; border-radius: 50%;">
+                <div class="level-text">Level {selected_exp}</div></div>""", unsafe_allow_html=True)
+            
+
 
         exp_history = get_player_experience_history(conn, selected_id)
         if exp_history:
@@ -467,6 +503,7 @@ def page_add_match():
 
         # 모든 경기에 대한 공통 정보 입력
         date = st.date_input("경기 날짜")
+        
         is_tournament = st.checkbox("대회 여부")
         is_doubles = st.checkbox("복식 여부")
 
@@ -584,7 +621,9 @@ def page_view_ranking():
         for index, (player_id, name, experience) in enumerate(ranking):
             tier = str(experience)[0] if experience >= 10 else '0'
             tier_image_path = f'icon/{tier}.png'
+            tier_image_base64 = get_image_base64(tier_image_path)
             background = get_background(index)
+            
 
             # 페이지 스타일 설정 (각 랭킹마다 다른 배경색 적용)
             st.markdown(f"""
@@ -609,14 +648,15 @@ def page_view_ranking():
                         font-weight: bold;
                     }}
                     .ranking-number {{
-                        font-size: 24px; /* 랭킹 크기 */
+                        font-size: 30px; /* 랭킹 크기 */
                         color: #ffffff; /* 랭킹 색상 */
                         font-weight: bold; /* 글꼴 굵기 */
+                        margin-right: 10px;
                     }}
                     .player-name {{
                         flex-grow: 1; /* 이름이 차지하는 공간을 최대로 */
                         margin: 0 20px; /* 좌우 마진 */
-                        font-size: 18px; /* 이름 크기 */
+                        font-size: 23px; /* 이름 크기 */
                         color: #ffffff; /* 이름 색상 */
                         font-weight: bold; /* 글꼴 굵기 */
                     }}
@@ -632,6 +672,7 @@ def page_view_ranking():
             st.markdown(f"""
                 <div class="ranking-row-{index}">
                     <div class="ranking-number">{index+1}</div>
+                    <img src="data:image/png;base64,{tier_image_base64}" style="width: 60px; height: 60px; object-fit: contain; border-radius: 50%;">
                     <div class="player-name">{name}</div>
                     <div class="player-level">Level {experience}</div>
                 </div>
@@ -657,25 +698,23 @@ def page_setting():
         data, columns = get_table_select(conn, table_name)  # 컬럼 이름도 함께 받아옴
         df = pd.DataFrame(data, columns=columns)
         st.table(df)
-    
-    
+     
 # 메인 함수: 페이지 선택 및 렌더링
 def main():
     st.sidebar.title("메뉴")
-    menu = ["랭킹", "사용자 정보 조회", "경기 결과 추가","사용자 등록", "설정" ]
+    menu = ["랭킹", "참가자 정보 조회", "경기 결과 추가","참가자 등록", "설정" ]
     choice = st.sidebar.selectbox("메뉴 선택", menu)
 
     if choice == "랭킹":
         page_view_ranking()
-    elif choice == "사용자 정보 조회":
+    elif choice == "참가자 정보 조회":
         page_view_players()
     elif choice == "경기 결과 추가":
         page_add_match()
-    elif choice == "사용자 등록":
+    elif choice == "참가자 등록":
         page_add_player()
     elif choice == "설정":
         page_setting()
         
-
 if __name__ == '__main__':
     main()
