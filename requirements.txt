@@ -2,3 +2,4 @@ streamlit
 pysqlite
 pandas
 matplotlib
+supabase
