@@ -232,11 +232,11 @@ def page_view_players():
         with st.container():
             col1, col2, col3 = st.columns(3)
             with col1:
-                show_doubles = st.button("복식 경기만 보기")
+                show_doubles = st.button("복식")
             with col2:
-                show_singles = st.button("단식 경기만 보기")
+                show_singles = st.button("단식")
             with col3:
-                show_all = st.button("전체보기")
+                show_all = st.button("전체")
         
         matches = get_player_matches(conn, selected_id)
         
@@ -286,6 +286,78 @@ def page_view_players():
                         font-weight: bold;
                         color: #4caf50;
                     }
+                   .match-info {
+                        font-family: Arial, sans-serif;
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: space-between;
+                        margin-bottom: 10px;
+                        padding: 15px;
+                        border-radius: 8px;
+                        background-color: #333333;  /* 디자인 변경 */
+                        color: #ffffff;  /* 글자 색상 변경 */
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.2);  /* 그림자 효과 추가 */
+                    }
+                    .match-details {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                    }
+                    .type-box, .result-box {
+                        padding: 2px 6px;
+                        border-radius: 4px;
+                        font-weight: bold;
+                    }
+                    .type-box {
+                        padding: 2px 6px;
+                        border-radius: 4px;
+                        font-weight: bold;
+                        background-color: #3498db;
+                        color: #fff;
+                        margin-right: 10px;
+                    }
+                    .match-type {
+                        background-color: #3498db;
+                        color: #fff;
+                        padding: 2px 6px;  /* 패딩 조절 */
+                        border-radius: 5px;
+                        font-weight: bold;
+                        font-size: 14px;  /* 글자 크기 조절 */
+                    }
+                    .vs {
+                        font-weight: bold;
+                        color: #e74c3c;  /* VS 색상 */
+                        margin: 0 5px;  /* 좌우 마진 조절 */
+                    }
+                    .result-box {
+                        color: #fff;
+                    }
+                    .win {
+                        background-color: #2ecc71;
+                    }
+                    .lose {
+                        background-color: #e74c3c;
+                    }
+                    .single {
+                        background-color: #44DBCA;
+                    }
+                    .double {
+                        background-color: #AB44DB;
+                    }
+                    .date {
+                        font-style: italic;
+                        margin-right: 15px;
+                    }
+                    .highlight-1 {
+                        font-weight: bold;
+                        color: #3498db;  /* 하이라이트된 이름 색상 */
+                        border-radius: 4px;
+                    }
+                    .score {
+                        font-weight: bold;
+                        color: #27ae60;  /* 스코어 색상 */
+                        border-radius: 4px;
+                    }
                 </style>
             """, unsafe_allow_html=True)
 
@@ -324,41 +396,51 @@ def page_view_players():
             else:  # show_all을 누르거나 아무것도 선택하지 않았을 때
                 filtered_matches = df_matches  # 전체 경기 결과
             
-            # 각 경기별로 복식 여부를 확인하고, 해당하는 컬럼을 표시
+            # 각 경기별로 복식 여부를 확인하고, 해당하는 텍스트 형식으로 출력
             for _, row in filtered_matches.iterrows():
-                display_df = pd.DataFrame([row])  # 현재 행을 DataFrame으로 변환
                 is_doubles = row['복식 여부']
+                match_date = row['날짜']
+                team_a_member1 = row['A팀원1']
+                team_a_score = row['A팀 점수']
+                team_b_score = row['B팀 점수']
+                team_b_member1 = row['B팀원1']
+                result = row['결과']
 
-                if is_doubles:  # 복식 경기일 경우
-                    display_columns = ['날짜', 'A팀원1', 'A팀원2', 'A팀 점수', 'B팀원1', 'B팀원2', 'B팀 점수', '결과']
+                # 복식 경기일 경우
+                if is_doubles:
+                    team_a_member2 = row['A팀원2']
+                    team_b_member2 = row['B팀원2']
+                    match_info = f"{team_a_member1} {team_a_member2} {team_a_score} vs {team_b_score} {team_b_member1} {team_b_member2}"
+                    match_type = "복식" 
                 else:  # 단식 경기일 경우
-                    display_columns = ['날짜', 'A팀원1', 'A팀 점수', 'B팀원1', 'B팀 점수', '결과']
+                    match_info = f"{team_a_member1} {team_a_score} vs {team_b_score} {team_b_member1}"
+                    match_type = "단식" 
 
-                # 스타일링 함수 정의
-                def apply_styling(row):
-                    styles = []  # 각 셀의 스타일을 저장할 리스트
-                    for col in row.index:
-                        # 특정 참가자 이름에 하이라이트 적용
-                        if row[col] == selected_name:
-                            styles.append('background-color: yellow; color: black')
-                        # 승리/패배 여부에 따른 색상 적용
-                        elif col == '결과':
-                            if row[col] == '승리':
-                                styles.append('background-color: lightgreen')
-                            else:
-                                styles.append('background-color: salmon')
-                        else:
-                            styles.append('')  # 스타일이 필요 없는 셀
-                    return styles  # 스타일 리스트 반환
+                # 승리팀 점수와 해당 참가자 이름 하이라이트 적용
+                
+                match_info = match_info.replace(" vs ", f"<span class='vs'>vs</span>")
 
-                # 스타일링 적용
-                styled_df = display_df[display_columns].style.apply(apply_styling, axis=1)
-                styled_df = styled_df.set_table_styles(
-                    [{'selector': 'th', 'props': [('background-color', '#555555'), ('color', 'white')]},  # 헤더 스타일
-                    {'selector': 'td', 'props': [('text-align', 'center')]}]  # 데이터 셀 스타일
-                ).hide(axis="index")  # 인덱스 숨김
+                if selected_name in match_info:
+                    match_info = match_info.replace(selected_name, f"<span class='highlight-1'>{selected_name}</span>")
+                if team_a_score > team_b_score:
+                    match_info = match_info.replace(f"{team_a_score}", f"<span class='score'>{team_a_score}</span>")
+                elif team_a_score < team_b_score:
+                    match_info = match_info.replace(f"{team_b_score}", f"<span class='score'>{team_b_score}</span>")
 
-                st.dataframe(styled_df)
+                result_class = "win" if result == "승리" else "lose"
+                
+                match_class = "single" if match_type == "단식" else "double"
+
+
+                st.markdown(f"""
+                    <div class="match-info">
+                        <div class="match-details">
+                            <div class="{match_class} match-type">{match_type}</div>
+                            <div>{match_info}</div>
+                            <div class="{result_class} result-box">{result}</div>
+                        </div>
+                    </div>
+                """, unsafe_allow_html=True)
 
         conn.close()
     else:
