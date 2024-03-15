@@ -637,9 +637,10 @@ def page_view_ranking():
             tier_image_path = f'icon/{tier}.png'
             tier_image_base64 = get_image_base64(tier_image_path)
             background = get_background(index)
-            
-            
-    
+            total_win_rate = 0
+            total_wins = 0
+            total_matches = 0
+             
             matches = get_player_matches(conn, player_id)
         
             if matches:
@@ -693,7 +694,7 @@ def page_view_ranking():
                 </style>
             """, unsafe_allow_html=True)
 
-            
+            print(total_win_rate)
             # 승률에 따른 색상 조정
             win_rate_color = "#A8CAE1" if total_win_rate >= 0.5 else "#CF2E11"
 
