@@ -209,7 +209,22 @@ def page_add_player():
 
 # 사용자 정보 조회 페이지
 def page_view_players():
-    st.subheader("전적")
+    st.markdown("""
+        <style>
+        .record-header {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4a4a4a;  # 다크 그레이 색상
+            background-color: #f0f2f6;  # 밝은 그레이 배경
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        </style>
+        <div class="record-header">RECORD</div>
+    """, unsafe_allow_html=True)
+    
     conn = create_connection('fsi_rank.db')
     if conn is not None:
         players = get_players(conn)
