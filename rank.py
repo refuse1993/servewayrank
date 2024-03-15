@@ -4,6 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FuncFormatter
 import base64
+import os
 
 # 데이터베이스 연결 함수
 def create_connection(db_file):
@@ -14,6 +15,20 @@ def create_connection(db_file):
     except Exception as e:
         st.error(f"데이터베이스 연결 중 에러 발생: {e}")
     return conn
+
+def download_db_file():
+    db_file_path = "fsi_rank.db"  # 데이터베이스 파일 경로
+    if os.path.exists(db_file_path):
+        with open(db_file_path, "rb") as file:
+            db_file_contents = file.read()
+        st.download_button(
+            label="Download DB File",
+            data=db_file_contents,
+            file_name="fsi_rank.db",
+            mime="application/octet-stream"
+        )
+    else:
+        st.error("DB file not found.")
 
 def get_image_base64(path):
     with open(path, "rb") as img_file:
@@ -1076,6 +1091,10 @@ def page_setting():
             st.table(df)  
         else:
             st.error("잘못된 패스워드입니다.")
+    
+    download_button = st.button("Download DB File")
+    if download_button:
+        download_db_file()
      
 # 메인 함수: 페이지 선택 및 렌더링
 def main():
