@@ -215,8 +215,9 @@ def page_view_players():
         .record-header {
             font-size: 24px;
             font-weight: bold;
-            color: #4a4a4a;  # 다크 그레이 색상
-            background-color: #f0f2f6;  # 밝은 그레이 배경
+            background: linear-gradient(to right, #ff7e5f, #feb47b);  # 오렌지-핑크 그라데이션
+            -webkit-background-clip: text;
+            color: #FFFFFF;  # 텍스트 색상을 투명하게 설정하여 배경 그라데이션을 보이게 함
             padding: 10px;
             border-radius: 10px;
             text-align: center;
@@ -633,8 +634,9 @@ def page_view_ranking():
         .ranking-header {
             font-size: 24px;
             font-weight: bold;
-            color: #4a4a4a;  # 다크 그레이 색상
-            background-color: #f0f2f6;  # 밝은 그레이 배경
+            background: linear-gradient(to right, #bdc3c7, #2c3e50);  # 회색에서 검은색으로 변하는 그라데이션
+            -webkit-background-clip: text;
+            color: #FFFFFF;  # 텍스트 색상을 투명하게 설정하여 배경 그라데이션을 보이게 함
             padding: 10px;
             border-radius: 10px;
             text-align: center;
