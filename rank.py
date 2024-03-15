@@ -612,7 +612,21 @@ def page_add_match():
         conn.close()
 
 def page_view_ranking():
-    st.subheader("참가자 랭킹")
+    st.markdown("""
+        <style>
+        .ranking-header {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4a4a4a;  # 다크 그레이 색상
+            background-color: #f0f2f6;  # 밝은 그레이 배경
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        </style>
+        <div class="ranking-header">RANKING</div>
+    """, unsafe_allow_html=True)
 
     # 랭킹에 따른 배경색 설정
     def get_background(index):
@@ -783,7 +797,7 @@ def main():
 
     if choice == "랭킹":
         page_view_ranking()
-    elif choice == "참가자 정보 조회":
+    elif choice == "전적":
         page_view_players()
     elif choice == "경기 결과 추가":
         page_add_match()
