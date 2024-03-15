@@ -1088,7 +1088,22 @@ def main():
         "참가자 등록": page_add_player,
         "설정": page_setting
     }
-    st.sidebar.title("LHㄷH.GG")
+    st.sidebar.markdown("""
+        <style>
+            .sidebar-title {
+                font-size: 24px;
+                color: #FFFFFF; /* 타이틀 색상 */
+                padding: 10px;
+                font-weight: bold;
+                text-align: center; /* 가운데 정렬 */
+                background-color: #1E1E1E; /* 배경색 (검은색) */
+                border-radius: 10px; /* 모서리 둥글게 */
+                margin-bottom: 10px; /* 하단 여백 */
+                box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1); /* 그림자 효과 */
+            }
+        </style>
+        <div class="sidebar-title">LHㄷH.GG</div>
+    """, unsafe_allow_html=True)
     
     for item, func in menu_items.items():
         if st.sidebar.button(item):
