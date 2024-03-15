@@ -178,7 +178,7 @@ def update_experience(conn, match_details, winning_team):
                 exp_change = -3 + weight  # 정상적인 경험치 감소
             else:
                 if current_exp - 2 + weight < 0:  # 경험치가 0 이하로 떨어지는지 확인
-                    exp_change = -current_exp  # 경험치를 0으로 만들기 위한 조정
+                    exp_change = - current_exp  # 경험치를 0으로 만들기 위한 조정
                 else:
                     exp_change = -2 + weight  # 정상적인 경험치 감소
 
@@ -577,7 +577,7 @@ def page_add_match():
 
         # 각 경기에 대한 입력
         for i in range(num_matches):
-            st.markdown(f"##### 경기 {i + 1}")
+            st.markdown(f"<div style='text-align: center; color: #2c3e50; font-size: 20px; font-weight: bold; margin: 10px 0; padding: 10px; background-color: #ecf0f1; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);'>경기 {i + 1}</div>", unsafe_allow_html=True)
             col1, col2, col_vs, col3, col4 = st.columns([3, 2, 1, 2, 3])
 
             with col1:
@@ -812,6 +812,24 @@ def page_view_ranking():
     else:
         st.error("랭킹 정보를 가져오는 데 실패했습니다.")
 
+def page_player_setting():
+    st.markdown("""
+        <style>
+        .playersetting-header {
+            font-size: 24px;
+            font-weight: bold;
+            background: linear-gradient(to right, #f1c40f, #f39c12);
+            color: #FFFFFF;
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        </style>
+        <div class="playersetting-header">Player Equipment</div>
+    """, unsafe_allow_html=True)
+    
+
 def page_setting():
     st.subheader("설정")
     conn = create_connection('fsi_rank.db')
@@ -844,7 +862,7 @@ def page_setting():
 # 메인 함수: 페이지 선택 및 렌더링
 def main():
     st.sidebar.title("메뉴")
-    menu = ["랭킹", "전적", "경기 결과 추가","참가자 등록", "설정" ]
+    menu = ["랭킹", "전적", "경기 결과 추가","참가자 장비", "참가자 등록", "설정" ]
     choice = st.sidebar.selectbox("메뉴 선택", menu)
 
     if choice == "랭킹":
@@ -853,6 +871,8 @@ def main():
         page_view_players()
     elif choice == "경기 결과 추가":
         page_add_match()
+    elif choice == "참가자 장비":
+        page_player_setting()
     elif choice == "참가자 등록":
         page_add_player()
     elif choice == "설정":
