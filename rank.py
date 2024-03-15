@@ -699,7 +699,6 @@ def page_view_ranking():
                 total_win_rate = total_wins / len(df_matches) if len(df_matches) > 0 else 0
         
 
-            print(total_win_rate)
             # 승률에 따른 색상 조정
             win_rate_color = "#A8CAE1" if total_win_rate >= 0.5 else "#CF2E11"
 
