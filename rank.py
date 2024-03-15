@@ -577,30 +577,38 @@ def page_add_match():
 
         # 각 경기에 대한 입력
         for i in range(num_matches):
-            st.markdown(f"<div style='text-align: center; color: #2c3e50; font-size: 20px; font-weight: bold; margin: 10px 0; padding: 10px; background-color: #ecf0f1; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);'>경기 {i + 1}</div>", unsafe_allow_html=True)
+            st.markdown(f"""
+            <div style='text-align: center; color: #2c3e50; font-size: 20px; font-weight: 600; margin: 10px 0; padding: 10px; background-color: #ecf0f1; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);'>
+                경기 {i + 1}
+            </div>
+            """, unsafe_allow_html=True)
             col1, col2, col_vs, col3, col4 = st.columns([3, 2, 1, 2, 3])
 
             with col1:
-                team_a_player1_name = st.selectbox("A팀원1", list(player_options.keys()), key=f"team_a_p1_{i}")
+                team_a_player1_name = st.selectbox("A팀원1", list(player_options.keys()), key=f"team_a_p1_{i}", index=0)
                 team_a_player1_id = player_options[team_a_player1_name]
                 if is_doubles:
-                    team_a_player2_name = st.selectbox("A팀원2", list(player_options.keys()), key=f"team_a_p2_{i}")
+                    team_a_player2_name = st.selectbox("A팀원2", list(player_options.keys()), key=f"team_a_p2_{i}", index=0)
                     team_a_player2_id = player_options[team_a_player2_name]
 
             with col2:
                 team_a_score = st.number_input("A팀 점수", min_value=0, value=0, key=f"team_a_score_{i}")
 
             with col_vs:
-                st.subheader("vs")
+                st.markdown(f"""
+                <div style='text-align: center; font-size: 24px; font-weight: bold; color: #34495e;'>
+                    vs
+                </div>
+                """, unsafe_allow_html=True)
 
             with col3:
                 team_b_score = st.number_input("B팀 점수", min_value=0, value=0, key=f"team_b_score_{i}")
 
             with col4:
-                team_b_player1_name = st.selectbox("B팀원1", list(player_options.keys()), key=f"team_b_p1_{i}")
+                team_b_player1_name = st.selectbox("B팀원1", list(player_options.keys()), key=f"team_b_p1_{i}", index=0)
                 team_b_player1_id = player_options[team_b_player1_name]
                 if is_doubles:
-                    team_b_player2_name = st.selectbox("B팀원2", list(player_options.keys()), key=f"team_b_p2_{i}")
+                    team_b_player2_name = st.selectbox("B팀원2", list(player_options.keys()), key=f"team_b_p2_{i}", index=0)
                     team_b_player2_id = player_options[team_b_player2_name]
                     
             # 입력받은 경기 정보 저장
