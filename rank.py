@@ -42,7 +42,7 @@ def add_player(conn, name, experience):
     return cur.lastrowid
 
 # 장비 추가 함수
-def add_equipment_history(conn, player_id, string_name, string_change_date, shoe_name, shoe_change_date):
+def add_equipment_history(conn, player_id, string_name, string_change_date, shoe_name, shoe_change_date, racket_name, racket_change_date):
     cur = conn.cursor()
     if string_name:  # 스트링 정보가 있으면 업데이트
         cur.execute("""
@@ -55,6 +55,13 @@ def add_equipment_history(conn, player_id, string_name, string_change_date, shoe
             INSERT INTO EquipmentHistory (PlayerID, ShoeName, ShoeChangeDate)
             VALUES (?, ?, ?)
         """, (player_id, shoe_name, shoe_change_date))
+        
+    
+    if racket_name:  # 신발 정보가 있으면 업데이트
+        cur.execute("""
+            INSERT INTO EquipmentHistory (PlayerID, RacketName, RacketChangeDate)
+            VALUES (?, ?, ?)
+        """, (player_id, racket_name, racket_change_date))
 
     conn.commit()
     
@@ -111,6 +118,15 @@ def get_equiphistory(conn):
             GROUP BY
                 PlayerID
         ),
+        LatestRacket AS (
+            SELECT
+                PlayerID,
+                MAX(RacketChangeDate) AS MaxRacketDate
+            FROM
+                EquipmentHistory
+            GROUP BY
+                PlayerID
+        ),
         StringInfo AS (
             SELECT
                 eh.PlayerID,
@@ -128,6 +144,15 @@ def get_equiphistory(conn):
             FROM
                 EquipmentHistory eh
             JOIN LatestShoe ls ON eh.PlayerID = ls.PlayerID AND eh.ShoeChangeDate = ls.MaxShoeDate
+        ),
+        RacketInfo AS (
+            SELECT
+                eh.PlayerID,
+                eh.RacketName,
+                eh.RacketChangeDate
+            FROM
+                EquipmentHistory eh
+            JOIN LatestRacket lr ON eh.PlayerID = lr.PlayerID AND eh.RacketChangeDate = lr.MaxRacketDate
         )
         SELECT
             p.PlayerID,
@@ -135,9 +160,12 @@ def get_equiphistory(conn):
             si.StringName,
             si.StringChangeDate,
             shi.ShoeName,
-            shi.ShoeChangeDate
+            shi.ShoeChangeDate,
+            ri.RacketName,
+            ri.RacketChangeDate
         FROM
             Players p
+        LEFT JOIN RacketInfo ri ON p.PlayerID = ri.PlayerID
         LEFT JOIN StringInfo si ON p.PlayerID = si.PlayerID
         LEFT JOIN ShoeInfo shi ON p.PlayerID = shi.PlayerID
     """)
@@ -923,12 +951,17 @@ def page_player_setting():
     # 세션 상태에 따라 장비 추가 폼 표시 또는 숨김
     if st.session_state.get('add_equipment', False):
         # 장비 종류 선택
-        equipment_choice = st.radio("추가할 장비 이력을 선택:", ('스트링', '신발', '전체'))
+        equipment_choice = st.radio("추가할 장비 이력을 선택:", ('라켓','스트링','신발', '전체'))
 
         with st.form("equipment_form"):
             player_name = st.selectbox("참가자", list(player_options.keys()), index=0)
             player_id = player_options[player_name]
 
+            # 스트링 정보 입력
+            if equipment_choice in ['라켓', '전체']:
+                racket_name = st.text_input("라켓 정보")
+                racket_change_date = st.date_input("라켓 교체 날짜")
+                
             # 스트링 정보 입력
             if equipment_choice in ['스트링', '전체']:
                 string_name = st.text_input("스트링 정보")
@@ -943,17 +976,21 @@ def page_player_setting():
 
             if submitted:
                 # 조건에 따라 함수 호출
-                if equipment_choice in ['스트링', '전체'] and string_name:
-                    add_equipment_history(conn, player_id, string_name, string_change_date, None if equipment_choice == '스트링' else shoe_name, None if equipment_choice == '스트링' else shoe_change_date)
-                if equipment_choice in ['신발', '전체'] and shoe_name:
-                    add_equipment_history(conn, player_id, None if equipment_choice == '신발' else string_name, None if equipment_choice == '신발' else string_change_date, shoe_name, shoe_change_date)
-
+                if equipment_choice in ['라켓', '전체'] and racket_name:
+                    # 라켓 정보 추가
+                    add_equipment_history(conn, player_id, string_name if equipment_choice == '전체' else None, string_change_date if equipment_choice == '전체' else None, shoe_name if equipment_choice == '전체' else None, shoe_change_date if equipment_choice == '전체' else None, racket_name, racket_change_date)
+                elif equipment_choice in ['스트링', '전체'] and string_name:
+                    # 스트링 정보만 추가 (신발 정보는 선택적)
+                    add_equipment_history(conn, player_id, string_name, string_change_date, shoe_name if equipment_choice == '전체' else None, shoe_change_date if equipment_choice == '전체' else None, racket_name if equipment_choice == '전체' else None, racket_change_date if equipment_choice == '전체' else None)
+                elif equipment_choice in ['신발', '전체'] and shoe_name:
+                    # 신발 정보만 추가 (스트링 정보는 선택적)
+                    add_equipment_history(conn, player_id, string_name if equipment_choice == '전체' else None, string_change_date if equipment_choice == '전체' else None, shoe_name, shoe_change_date, racket_name if equipment_choice == '전체' else None, racket_change_date if equipment_choice == '전체' else None)
                 # 성공 메시지 표시
                 st.success('장비 이력이 추가되었습니다.')
 
     # 장비 이력 출력부 (업데이트 후 새로고침)
     equiphistory = get_equiphistory(conn)
-    df = pd.DataFrame(equiphistory, columns=['PlayerID', 'Name', 'StringName', 'StringChangeDate', 'ShoeName', 'ShoeChangeDate'])
+    df = pd.DataFrame(equiphistory, columns=['PlayerID', 'Name', 'StringName', 'StringChangeDate', 'ShoeName', 'ShoeChangeDate', 'RacketName','RacketChangeDate'])
     df.replace({None: ''}, inplace=True)
     
     # 최신 날짜 기준으로 집계
@@ -961,7 +998,9 @@ def page_player_setting():
         'StringName': 'last',  # 최신 스트링 이름
         'StringChangeDate': 'max',  # 최신 스트링 변경 날짜
         'ShoeName': 'last',  # 최신 신발 이름
-        'ShoeChangeDate': 'max'  # 최신 신발 변경 날짜
+        'ShoeChangeDate': 'max',  # 최신 신발 변경 날짜
+        'RacketName': 'last',  # 최신 신발 이름
+        'RacketChangeDate': 'max'  # 최신 신발 변경 날짜
     }
     grouped_df = df.groupby('Name', as_index=False).agg(agg_funcs)
 
@@ -999,7 +1038,8 @@ def page_player_setting():
         html_content = f"""
         <div class="equipment-list">
             <div class="equipment-header">{row['Name']}</div>
-            <div class="equipment-detail">🎾 스트링: {row['StringName']} <span style="color: #888;">(변경일: {row['StringChangeDate']})</span></div>
+            <div class="equipment-detail">🎾 라켓: {row['RacketName']} <span style="color: #888;">(변경일: {row['RacketChangeDate']})</span></div>
+            <div class="equipment-detail">🧵 스트링: {row['StringName']} <span style="color: #888;">(변경일: {row['StringChangeDate']})</span></div>
             <div class="equipment-detail">👟 신발: {row['ShoeName']} <span style="color: #888;">(변경일: {row['ShoeChangeDate']})</span></div>
         </div>
         """
@@ -1048,7 +1088,7 @@ def main():
         "참가자 등록": page_add_player,
         "설정": page_setting
     }
-    st.sidebar.title("SW.GG")
+    st.sidebar.title("LHㄷH.GG")
     
     for item, func in menu_items.items():
         if st.sidebar.button(item):
