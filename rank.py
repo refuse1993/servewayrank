@@ -1048,6 +1048,7 @@ def main():
         "참가자 등록": page_add_player,
         "설정": page_setting
     }
+    st.sidebar.title("SW.GG")
     
     for item, func in menu_items.items():
         if st.sidebar.button(item):
