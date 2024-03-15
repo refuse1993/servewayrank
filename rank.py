@@ -209,7 +209,7 @@ def page_add_player():
 
 # 사용자 정보 조회 페이지
 def page_view_players():
-    st.subheader("정보 조회")
+    st.subheader("전적")
     conn = create_connection('fsi_rank.db')
     if conn is not None:
         players = get_players(conn)
@@ -442,6 +442,8 @@ def page_view_players():
                 filtered_matches = df_matches[df_matches['복식 여부'] == False]  # 단식 경기만 필터링
             else:  # show_all을 누르거나 아무것도 선택하지 않았을 때
                 filtered_matches = df_matches  # 전체 경기 결과
+                
+            previous_date = None
             
             # 각 경기별로 복식 여부를 확인하고, 해당하는 텍스트 형식으로 출력
             for _, row in filtered_matches.iterrows():
@@ -475,9 +477,11 @@ def page_view_players():
                     match_info = match_info.replace(f"{team_b_score}", f"<span class='score'>{team_b_score}</span>")
 
                 result_class = "win" if result == "승리" else "lose"
-                
                 match_class = "single" if match_type == "단식" else "double"
 
+                # 현재 날짜가 이전에 표시된 날짜와 다를 경우에만 날짜 표시
+                if match_date != previous_date:
+                    st.markdown(f"<div class='date'>{match_date}</div>", unsafe_allow_html=True)
 
                 st.markdown(f"""
                     <div class="match-info">
@@ -488,6 +492,10 @@ def page_view_players():
                         </div>
                     </div>
                 """, unsafe_allow_html=True)
+
+                # 현재 행의 날짜를 이전 날짜로 설정
+                previous_date = match_date
+
 
         conn.close()
     else:
