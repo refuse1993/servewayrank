@@ -33,11 +33,11 @@ def get_table_select(conn, table_name):
     return rows, columns
 
 # 참가자 추가 함수
-def add_player(conn, name, experience):
-    sql = ''' INSERT INTO Players(Name, Experience)
-              VALUES(?,?) '''
+def add_player(conn, name, experience, title):
+    sql = ''' INSERT INTO Players(Name, Experience, Title)
+              VALUES(?,?,?) '''
     cur = conn.cursor()
-    cur.execute(sql, (name, experience))
+    cur.execute(sql, (name, experience, title))
     conn.commit()
     return cur.lastrowid
 
@@ -65,10 +65,18 @@ def add_equipment_history(conn, player_id, string_name, string_change_date, shoe
 
     conn.commit()
     
+#타이틀 수정 함수
+def update_title(conn, id, title):
+    sql = ''' UPDATE Players SET Title = ? WHERE PlayerID = ? '''
+    cur = conn.cursor()
+    player_id_int = int(id)
+    cur.execute(sql, (title, player_id_int))
+    conn.commit()
+    
 # 참가자 목록 조회 함수
 def get_players(conn):
     cur = conn.cursor()
-    cur.execute("SELECT PlayerID, Name, Experience FROM Players")
+    cur.execute("SELECT PlayerID, Name, Experience, Title FROM Players")
     rows = cur.fetchall()
     return rows
 
@@ -84,17 +92,16 @@ def get_player_matches(conn, player_id):
                WHEN m.WinningTeam = 'B' AND ? IN (m.TeamBPlayer1ID, m.TeamBPlayer2ID) THEN '승리'
                ELSE '패배'
            END AS Result
-    FROM Matches m
-    JOIN Players p1 ON m.TeamAPlayer1ID = p1.PlayerID
-    LEFT JOIN Players p2 ON m.TeamAPlayer2ID = p2.PlayerID
-    JOIN Players p3 ON m.TeamBPlayer1ID = p3.PlayerID
-    LEFT JOIN Players p4 ON m.TeamBPlayer2ID = p4.PlayerID
-    WHERE ? IN (m.TeamAPlayer1ID, m.TeamAPlayer2ID, m.TeamBPlayer1ID, m.TeamBPlayer2ID)
-    ORDER BY m.Date ASC
-    """, (player_id_int, player_id_int, player_id_int))
+        FROM Matches m
+        JOIN Players p1 ON m.TeamAPlayer1ID = p1.PlayerID
+        LEFT JOIN Players p2 ON m.TeamAPlayer2ID = p2.PlayerID
+        JOIN Players p3 ON m.TeamBPlayer1ID = p3.PlayerID
+        LEFT JOIN Players p4 ON m.TeamBPlayer2ID = p4.PlayerID
+        WHERE ? IN (m.TeamAPlayer1ID, m.TeamAPlayer2ID, m.TeamBPlayer1ID, m.TeamBPlayer2ID)
+        ORDER BY m.Date ASC
+        """, (player_id_int, player_id_int, player_id_int))
     matches = cur.fetchall()
     return matches
-
 
 # 사용자의 경기 기록을 조회하는 함수
 def get_equiphistory(conn):
@@ -320,15 +327,34 @@ def page_add_player():
     
     name = st.text_input('이름', placeholder='참가자 이름을 입력하세요.')
     experience = 10
+    title = "Newbie"
+    conn = create_connection('fsi_rank.db')
+    
     if st.button('참가자 추가'):
-        conn = create_connection('fsi_rank.db')
         if conn is not None:
-            add_player(conn, name, experience)
-            st.success(f'참가자 "{name}"가 성공적으로 추가되었습니다.')
+            add_player(conn, name, experience, title)
+            st.success(f'참가자 "{name}"가 성공적으로 추가되었습니다.')            
             conn.close()
         else:
             st.error('데이터베이스에 연결할 수 없습니다.')
-
+            
+    if conn is not None:
+        players = get_players(conn)
+        df_players = pd.DataFrame(players, columns=['ID', '이름', '경험치','타이틀'])
+        player_names = df_players['이름'].tolist()
+        selected_name = st.selectbox("참가자를 선택하세요", player_names)
+        selected_id = df_players[df_players['이름'] == selected_name]['ID'].iloc[0]
+        selected_TITLE = df_players[df_players['이름'] == selected_name]['타이틀'].iloc[0]
+        st.write("현재 칭호: ",selected_TITLE)
+        input_title = st.text_input("변경할 칭호를 입력하세요")
+        if st.button("변경"):
+            if not input_title:
+                st.error('변경할 칭호를 입력하세요.')
+            else :
+                print(selected_name,selected_id,input_title)
+                update_title(conn, selected_id,input_title)
+                st.success(f'칭호 "{input_title}"가 성공적으로 추가되었습니다.')
+             
 # 사용자 정보 조회 페이지
 def page_view_players():
     
@@ -352,11 +378,12 @@ def page_view_players():
     conn = create_connection('fsi_rank.db')
     if conn is not None:
         players = get_players(conn)
-        df_players = pd.DataFrame(players, columns=['ID', '이름', '경험치'])
+        df_players = pd.DataFrame(players, columns=['ID', '이름', '경험치','타이틀'])
         player_names = df_players['이름'].tolist()
         selected_name = st.selectbox("참가자를 선택하세요", player_names)
         selected_id = df_players[df_players['이름'] == selected_name]['ID'].iloc[0]
         selected_exp = df_players[df_players['이름'] == selected_name]['경험치'].iloc[0]
+        selected_title = df_players[df_players['이름'] == selected_name]['타이틀'].iloc[0]
         
         tier = str(selected_exp)[0] if selected_exp >= 10 else '0'
         tier_image_path = f'icon/{tier}.png'
@@ -367,6 +394,7 @@ def page_view_players():
                 .player-info {{
                     display: flex;
                     align-items: center;
+                    justify-content: space-between; /* 요소를 왼쪽과 오른쪽 끝에 배치 */
                     margin-bottom: 10px;
                     padding: 10px;
                     border-radius: 10px;
@@ -375,42 +403,98 @@ def page_view_players():
                 }}
                 .level-text {{
                     color: #ffffff; /* 글자 색상 */
-                    margin-left: 20px; /* 이미지와 텍스트 사이의 간격 */
-                    font-size: 24px; /* 글자 크기 */
+                    margin-left: 10px; /* Level 텍스트와 이미지 사이의 간격 */
+                    margin-right: 20px; /* Level 텍스트와 타이틀 사이의 간격 */
+                    font-size: 22px; /* 글자 크기 */
                     font-weight: bold; /* 글자 굵기 */
                     text-shadow: 2px 2px 4px rgba(0,0,0,0.5); /* 텍스트 그림자 */
                     background: -webkit-linear-gradient(#fff, #fff); /* 텍스트 그라디언트 색상 */
                     -webkit-background-clip: text;
                     -webkit-text-fill-color: transparent; /* 텍스트 그라디언트 색상을 위해 필요 */
                 }}
+                .player-title {{
+                    font-size: 24px;
+                    color: #F0E68C; /* 은색 */
+                    font-weight: bold; /* 볼드체 */
+                    font-style: italic; /* 이탤릭체 */
+                    animation: blinker 1s linear infinite; /* 번쩍번쩍 애니메이션 적용 */
+                    margin-right: 10px; /* Level 텍스트와 타이틀 사이의 간격 */
+                }}
+                @keyframes blinker {{
+                    50% {{
+                        opacity: 0.5; /* 반투명하게 */
+                    }}
+                }}
             </style>
         """, unsafe_allow_html=True)
 
         st.markdown(f"""<div class="player-info">
                 <img src="data:image/png;base64,{tier_image_base64}" style="width: 70px; height: 70px; object-fit: contain; border-radius: 50%;">
-                <div class="level-text">Level {selected_exp}</div></div>""", unsafe_allow_html=True)
+                <div class="level-text">Level {selected_exp}</div>
+                <div class="player-title">{selected_title}</div>""", unsafe_allow_html=True)
+        
+        # 스타일을 기본값으로 설정
+        plt.style.use('default')
             
+        # exp_history를 조회하여 DataFrame 생성
         exp_history = get_player_experience_history(conn, selected_id)
         if exp_history:
             df_exp_history = pd.DataFrame(exp_history, columns=['날짜', '경험치'])
+
             plt.figure(figsize=(10, 4))
-            plt.plot(df_exp_history.index + 1, df_exp_history['경험치'], marker='o')
-            
-            # 각 데이터 포인트에 대한 값 표시
-            for i, exp in enumerate(df_exp_history['경험치']):
-                plt.text(i + 1, exp + 0.025 * max(df_exp_history['경험치']),  # 데이터 포인트보다 약간 위
-                        f'{exp}',  # 표시할 텍스트
-                        color='purple',  # 글자 색상
-                        va='center',  # 세로 정렬
-                        ha='center',  # 가로 정렬
-                        fontdict={'weight': 'bold', 'size': 9})  # 글자 스타일
+            ax = plt.gca()  # 현재 축 가져오기
+
+            plt.plot(df_exp_history.index + 1, df_exp_history['경험치'], marker='o', linestyle='-')
+
+            for i in range(1, len(df_exp_history)):
+                diff = df_exp_history['경험치'].iloc[i] - df_exp_history['경험치'].iloc[i - 1]
+                symbol = '▲' if diff >= 0 else '▼'
+                color = 'green' if diff >= 0 else 'red'
+                
+                # 증감 표시
+                plt.text(df_exp_history.index[i] + 1, df_exp_history['경험치'].iloc[i] + 0.01 * max(df_exp_history['경험치']),
+                        f"{symbol}{abs(diff)}", color=color, va='center', ha='center', fontdict={'weight': 'bold', 'size': 8})
+
+                # 현재 경험치 값 표시 (크고 화려하게)
+                plt.text(df_exp_history.index[i] + 1, df_exp_history['경험치'].iloc[i] + 0.02 * max(df_exp_history['경험치']),
+                        f"{df_exp_history['경험치'].iloc[i]}", color='blue', va='center', ha='center', fontdict={'weight': 'bold', 'size': 12})
+
             plt.xlabel('Game Count')
             plt.ylabel('LEVEL')
-            plt.xticks(range(1, len(df_exp_history) + 1))  # x축 눈금을 이벤트 번호에 맞춰 조정
+            plt.grid(False)
+
+            plt.tick_params(
+                axis='both',
+                which='both',
+                bottom=False,
+                top=False,
+                left=False,
+                right=False,
+                labelbottom=False,
+                labelleft=False
+            )
+
+            # 축 spines 제거
+            for spine in ax.spines.values():
+                spine.set_visible(False)
+
+            plt.xticks(range(1, len(df_exp_history) + 1))
             plt.gca().yaxis.set_major_formatter(FuncFormatter(lambda x, _: f'{int(x)}'))
+
             st.pyplot(plt)
         else:
-            st.write("경험치 변화 기록이 없습니다.")
+            st.markdown(f"""
+                <div style="background-color: #f8d7da;
+                            color: #721c24;
+                            padding: 5px;
+                            border: 1px solid #f5c6cb;
+                            border-radius: 5px;
+                            font-size: 18px;
+                            text-align: center;
+                            margin-bottom: 10px;">
+                    <strong>Here Comes a New Challenger</strong>
+                </div>
+            """, unsafe_allow_html=True)
             
         with st.container():
             # '복식', '단식', '전체' 중 하나를 선택할 수 있는 라디오 버튼 생성
@@ -662,7 +746,7 @@ def page_add_match():
     
     if conn is not None:
         players = get_players(conn)  # 참가자 정보 가져오기
-        player_options = {name: player_id for player_id, name, _ in players}  # 참가자 이름과 ID를 매핑하는 딕셔너리 생성
+        player_options = {name: player_id for player_id, name, _, _ in players}  # 참가자 이름과 ID를 매핑하는 딕셔너리 생성
 
         # 경기 수 입력
         num_matches = st.number_input("등록할 경기 수", min_value=1, max_value=10, value=1)
@@ -670,7 +754,6 @@ def page_add_match():
         # 모든 경기에 대한 공통 정보 입력
         date = st.date_input("경기 날짜")
         
-        is_tournament = st.checkbox("대회 여부")
         is_doubles = st.checkbox("복식 여부")
 
         # 각 경기의 세부 정보를 저장할 리스트
@@ -715,7 +798,7 @@ def page_add_match():
             # 입력받은 경기 정보 저장
             match_info = {
                 "date": date,
-                "is_tournament": is_tournament,
+                "is_tournament": 0,
                 "is_doubles": is_doubles,
                 "team_a": [team_a_player1_id] + ([team_a_player2_id] if is_doubles else []),
                 "team_b": [team_b_player1_id] + ([team_b_player2_id] if is_doubles else []),
@@ -751,7 +834,133 @@ def page_add_match():
                 update_experience(conn, match_details, winning_team)
         st.success("모든 경기 결과가 저장되었습니다.")
         
-        if is_tournament:
+    
+        conn.close()
+
+def page_add_Competition():
+    st.markdown("""
+        <style>
+        .matchadd-header {
+            font-size: 24px;
+            font-weight: bold;
+            background: linear-gradient(to right, #5C97BF, #1B4F72);
+            color: #FFFFFF;  # 텍스트 색상을 투명하게 설정하여 배경 그라데이션을 보이게 함
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        </style>
+        <div class="matchadd-header">Competition Add</div>
+    """, unsafe_allow_html=True)
+        
+    conn = create_connection('fsi_rank.db')
+    
+    if conn is not None:
+        players = get_players(conn)  # 참가자 정보 가져오기
+        player_options = {name: player_id for player_id, name, _ in players}  # 참가자 이름과 ID를 매핑하는 딕셔너리 생성
+        
+
+        
+        Competition_name = st.text_input("대회명")
+        # 모든 경기에 대한 공통 정보 입력
+        date = st.date_input("대회 날짜")
+        
+        # 경기 수 입력
+        num_matches = st.number_input("등록할 경기 수", min_value=1, max_value=10, value=1)
+        is_doubles = st.checkbox("복식 여부")
+
+        # 각 경기의 세부 정보를 저장할 리스트
+        all_matches = []
+
+        # 각 경기에 대한 입력
+        for i in range(num_matches):
+            st.markdown(f"""
+            <div style='text-align: center; color: #2c3e50; font-size: 20px; font-weight: 600; margin: 10px 0; padding: 10px; background-color: #ecf0f1; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);'>
+                Match {i + 1}
+            </div>
+            """, unsafe_allow_html=True)
+            col1, col2, col_vs, col3, col4 = st.columns([3, 2, 1, 2, 3])
+
+            with col1:
+                team_a_player1_name = st.selectbox("Team A 1", list(player_options.keys()), key=f"team_a_p1_{i}", index=0)
+                team_a_player1_id = player_options[team_a_player1_name]
+                if is_doubles:
+                    team_a_player2_name = st.selectbox("Team A 2", list(player_options.keys()), key=f"team_a_p2_{i}", index=0)
+                    team_a_player2_id = player_options[team_a_player2_name]
+
+            with col2:
+                team_a_score = st.number_input("Team A Score", min_value=0, value=0, key=f"team_a_score_{i}")
+
+            with col_vs:
+                st.markdown(f"""
+                <div style='text-align: center; font-size: 24px; font-weight: bold; color: #34495e;'>
+                    vs
+                </div>
+                """, unsafe_allow_html=True)
+
+            with col3:
+                team_b_score = st.number_input("Team B Score", min_value=0, value=0, key=f"team_b_score_{i}")
+
+            with col4:
+                team_b_player1_name = st.selectbox("Team B 1", list(player_options.keys()), key=f"team_b_p1_{i}", index=0)
+                team_b_player1_id = player_options[team_b_player1_name]
+                if is_doubles:
+                    team_b_player2_name = st.selectbox("Team B 2", list(player_options.keys()), key=f"team_b_p2_{i}", index=0)
+                    team_b_player2_id = player_options[team_b_player2_name]
+                    
+            # 입력받은 경기 정보 저장
+            match_info = {
+                "date": date,
+                "is_tournament": 1,
+                "is_doubles": is_doubles,
+                "team_a": [team_a_player1_id] + ([team_a_player2_id] if is_doubles else []),
+                "team_b": [team_b_player1_id] + ([team_b_player2_id] if is_doubles else []),
+                "team_a_score": team_a_score,
+                "team_b_score": team_b_score,
+                "winning_team": 'A' if team_a_score > team_b_score else 'B'
+            }
+            all_matches.append(match_info)
+            
+    st.markdown("""
+    <style>
+        .improving-text {
+            color: red; 
+            font-size: 40px; 
+            text-align: center; 
+            margin-top: 100px;
+        }
+    </style>
+    <div class="improving-text">개선중</div>
+    """, unsafe_allow_html=True)
+    
+    show_button = False
+    if show_button:        
+        # 모든 경기 정보 입력 후 결과 저장 버튼
+        if st.button("모든 경기 결과 저장"):
+            conn = create_connection('fsi_rank.db')
+            if conn is not None:
+                for match_info in all_matches:
+                # 각 경기 정보에 따라 경기 결과 및 경험치 변경을 처리
+                    team_a = match_info['team_a']
+                    team_b = match_info['team_b']
+                    match_details = (
+                    match_info['date'],
+                    match_info['is_tournament'],
+                    match_info['is_doubles'],
+                    team_a[0],  # TeamAPlayer1ID
+                    team_a[1] if match_info['is_doubles'] else None,  # TeamAPlayer2ID (복식인 경우)
+                    match_info['team_a_score'],
+                    team_b[0],  # TeamBPlayer1ID
+                    team_b[1] if match_info['is_doubles'] else None,  # TeamBPlayer2ID (복식인 경우)
+                    match_info['team_b_score'],
+                    match_info['winning_team']
+                )
+                    # add_match 함수를 호출하여 경기 결과를 Matches 테이블에 저장     
+                    winning_team = match_info['winning_team']
+                    update_experience(conn, match_details, winning_team)
+            st.success("모든 경기 결과가 저장되었습니다.")    
+            
             scores = calculate_tournament_scores(all_matches)
             ranked_players = sorted(scores.items(), key=lambda x: x[1], reverse=True)
             st.subheader("대회 결과")
@@ -767,11 +976,7 @@ def page_add_match():
                 elif rank == 3:
                     calculate_exp_changes(conn,player,1,date)
                     st.write(f"참가자 {player} 경험치 +1")
-        else:
-            st.write("이번 경기는 대회가 아닙니다.")
-    
-        conn.close()
-
+            
 def page_view_ranking():
     st.markdown("""
         <style>
@@ -805,14 +1010,15 @@ def page_view_ranking():
     
     if conn is not None:
         cur = conn.cursor()
-        cur.execute("SELECT PlayerID, Name, Experience FROM Players ORDER BY Experience DESC")
+        cur.execute("SELECT PlayerID, Name, Experience, title FROM Players ORDER BY Experience DESC")
         ranking = cur.fetchall()
 
-        for index, (player_id, name, experience) in enumerate(ranking):
+        for index, (player_id, name, experience, title) in enumerate(ranking):
             tier = str(experience)[0] if experience >= 10 else '0'
             tier_image_path = f'icon/{tier}.png'
             tier_image_base64 = get_image_base64(tier_image_path)
             background = get_background(index)
+            title = title
             total_win_rate = 0
             total_wins = 0
             total_matches = 0
@@ -889,6 +1095,20 @@ def page_view_ranking():
                         color: white;
                         font-weight: bold;
                     }}
+                    .player-info {{
+                        flex-direction: column; /* 내용을 세로로 배열 */
+                        align-items: center; /* 센터 정렬 */
+                        flex-grow: 1; /* 이름이 차지하는 공간을 최대로 */
+                        margin: 0 10x; /* 좌우 마진 */
+                        margin-bottom: 12px; /* 아래쪽 마진 추가 */
+                    }}
+                    .player-title {{
+                        font-size: 13px;
+                        color: #F0E68C; /* 은색 */
+                        font-weight: bold; /* 볼드체 */
+                        font-style: italic; /* 이탤릭체 */
+                        animation: blinker 1s linear infinite; /* 번쩍번쩍 애니메이션 적용 */
+                    }}
                     .ranking-number {{
                         font-size: 26px; /* 랭킹 크기 */
                         color: #ffffff; /* 랭킹 색상 */
@@ -902,6 +1122,11 @@ def page_view_ranking():
                         color: #ffffff; /* 이름 색상 */
                         font-weight: bold; /* 글꼴 굵기 */
                     }}
+                    @keyframes blinker {{
+                        50% {{
+                            opacity: 0.5; /* 반투명하게 */
+                        }}
+                    }}
                 </style>
             """, unsafe_allow_html=True)
 
@@ -910,7 +1135,10 @@ def page_view_ranking():
                 <div class="ranking-row-{index}">
                     <div class="ranking-number">{index+1}</div>
                     <img src="data:image/png;base64,{tier_image_base64}" style="width: 60px; height: 60px; object-fit: contain; border-radius: 50%;">
-                    <div class="player-name">{name}</div>
+                    <div class="player-info">
+                        <div class="player-title">{title}</div>
+                        <div class="player-name">{name}</div>
+                    </div>
                     <div class="win-rate" style="color: {win_rate_color};">{total_win_rate * 100:.1f}%</div>
                     <div class="win-loss-stats">{total_wins}승 / {total_matches - total_wins}패</div> <!-- 승패 수 표현 변경 -->
                     <div class="player-level-box">Level {experience}</div> <!-- 레벨 박스화 및 스타일 적용 -->
@@ -940,7 +1168,7 @@ def page_player_setting():
     
     conn = create_connection('fsi_rank.db')  # 데이터베이스 연결
     players = get_players(conn)  # 참가자 정보 가져오기
-    player_options = {name: player_id for player_id, name, _ in players}  # 참가자 이름과 ID를 매핑하는
+    player_options = {name: player_id for player_id, name, _, _ in players}  # 참가자 이름과 ID를 매핑하는
     
     # 장비 추가 여부를 묻는 체크박스
     add_equipment = st.checkbox('장비 추가하기')
@@ -1021,7 +1249,7 @@ def page_player_setting():
         .equipment-header {
             font-size: 18px; /* 폰트 크기 조정 */
             font-weight: bold;
-            color: #4CAF50; /* 폰트 색상 변경 */
+            color: #2196F3; /* 폰트 색상 변경 */
             margin-bottom: 5px; /* 하단 여백 추가 */
         }
         .equipment-detail {
@@ -1073,15 +1301,77 @@ def page_setting():
             st.table(df)  
         else:
             st.error("잘못된 패스워드입니다.")
-    
-     
+
+def main_page():
+    st.markdown("""
+        <style>
+            .welcome-text {
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                height: 50vh;
+                color: #2c3e50;
+                font-family: 'Arial', sans-serif;
+                font-size: 60px;
+                font-weight: bold;
+                text-transform: uppercase;
+                background: linear-gradient(90deg, rgba(2,0,36,1) 0%, rgba(9,121,115,1) 35%, rgba(0,212,255,1) 100%);
+                -webkit-background-clip: text;
+                color: transparent;
+                animation: shine 2s forwards, appear 0.5s backwards;
+            }
+
+            .click-sidebar-text {
+                font-size: 20px; /* 작은 글자 크기 */
+                color: #2c3e50; /* 텍스트 색상 조정 */
+                font-weight: lighter; /* 가벼운 글자 굵기 */
+                margin-top: 20px; /* 'Welcome to LHㄷH.GG'와의 간격 */
+                opacity: 0.7; /* 텍스트 투명도 조정 */
+                animation: fadeIn 2s; /* Fade-in 애니메이션 */
+            }
+
+            @keyframes shine {
+                from {
+                    background-position: top right;
+                }
+                to {
+                    background-position: top left;
+                }
+            }
+
+            @keyframes appear {
+                from {
+                    opacity: 0;
+                }
+                to {
+                    opacity: 1;
+                }
+            }
+
+            @keyframes fadeIn {
+                from {
+                    opacity: 0;
+                }
+                to {
+                    opacity: 0.7;
+                }
+            }
+        </style>
+
+        <div class="welcome-text">
+            Welcome to <br> LHㄷH.GG
+            <div class="click-sidebar-text">왼쪽 위 사이드바를 클릭하세요.</div>
+        </div>
+    """, unsafe_allow_html=True)
+
 # 메인 함수: 페이지 선택 및 렌더링
 def main():
-    # 메뉴 항목과 해당 함수의 매핑
     menu_items = {
         "랭킹": page_view_ranking,
         "전적": page_view_players,
         "경기 결과 추가": page_add_match,
+        "대회 경기 추가": page_add_Competition,
         "참가자 장비": page_player_setting,
         "참가자 등록": page_add_player,
         "설정": page_setting
@@ -1110,6 +1400,8 @@ def main():
     # 현재 선택된 페이지에 해당하는 함수 호출
     if 'page' in st.session_state:
         menu_items[st.session_state['page']]()
+    else:
+        main_page()  # 'page'가 session_state에 없으면 기본 페이지를 호출
         
 if __name__ == '__main__':
     main()
