@@ -195,7 +195,23 @@ def calculate_tournament_scores(matches):
   
 # 사용자 등록 페이지
 def page_add_player():
-    st.subheader("새 참가자 등록")
+    
+    st.markdown("""
+        <style>
+        .playeradd-header {
+            font-size: 24px;
+            font-weight: bold;
+            background: linear-gradient(to right, #FF5733, #C70039);
+            color: #FFFFFF;  # 텍스트 색상을 투명하게 설정하여 배경 그라데이션을 보이게 함
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        </style>
+        <div class="playeradd-header">Player Add</div>
+    """, unsafe_allow_html=True)
+    
     name = st.text_input('이름', placeholder='참가자 이름을 입력하세요.')
     experience = 10
     if st.button('참가자 추가'):
@@ -520,8 +536,22 @@ def page_view_players():
 
 # 경기 결과 추가 페이지
 def page_add_match():
-    
-    st.subheader("경기 결과 등록")
+    st.markdown("""
+        <style>
+        .matchadd-header {
+            font-size: 24px;
+            font-weight: bold;
+            background: linear-gradient(to right, #5C97BF, #1B4F72);
+            color: #FFFFFF;  # 텍스트 색상을 투명하게 설정하여 배경 그라데이션을 보이게 함
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        </style>
+        <div class="matchadd-header">Match Add</div>
+    """, unsafe_allow_html=True)
+        
     conn = create_connection('fsi_rank.db')
     
     if conn is not None:
