@@ -1072,6 +1072,10 @@ def page_setting():
 
     # Dropdown to select a table
     table_name = st.selectbox("초기화 할 테이블", ["Players", "Matches", "ExperienceHistory", "EquipmentHistory"])
+    
+    download_button = st.button("Download DB File")
+    if download_button:
+        download_db_file()
 
     # 패스워드 검증
     correct_password = "1626"  # 실제 패스워드로 변경 필요
@@ -1092,9 +1096,6 @@ def page_setting():
         else:
             st.error("잘못된 패스워드입니다.")
     
-    download_button = st.button("Download DB File")
-    if download_button:
-        download_db_file()
      
 # 메인 함수: 페이지 선택 및 렌더링
 def main():
