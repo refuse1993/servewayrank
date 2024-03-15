@@ -209,6 +209,7 @@ def page_add_player():
 
 # 사용자 정보 조회 페이지
 def page_view_players():
+    
     st.markdown("""
         <style>
         .record-header {
@@ -807,7 +808,7 @@ def page_setting():
 # 메인 함수: 페이지 선택 및 렌더링
 def main():
     st.sidebar.title("메뉴")
-    menu = ["랭킹", "참가자 정보 조회", "경기 결과 추가","참가자 등록", "설정" ]
+    menu = ["랭킹", "전적", "경기 결과 추가","참가자 등록", "설정" ]
     choice = st.sidebar.selectbox("메뉴 선택", menu)
 
     if choice == "랭킹":
