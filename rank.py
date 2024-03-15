@@ -914,37 +914,42 @@ def page_player_setting():
     players = get_players(conn)  # 참가자 정보 가져오기
     player_options = {name: player_id for player_id, name, _ in players}  # 참가자 이름과 ID를 매핑하는
     
-    # 장비 종류 선택
-    equipment_choice = st.radio("추가할 장비 이력을 선택:", ('스트링', '신발', '전체'))
-    
-    string_name = None
-    string_change_date = None
-    shoe_name = None
-    shoe_change_date = None
-    
-    with st.form("equipment_form"):
-        player_name = st.selectbox("참가자", list(player_options.keys()), index=0)
-        player_id = player_options[player_name]
+    # 장비 추가 여부를 묻는 체크박스
+    add_equipment = st.checkbox('장비 추가하기')
 
-        # 스트링 정보 입력
-        if equipment_choice in ['스트링', '전체']:
-            string_name = st.text_input("스트링 정보")
-            string_change_date = st.date_input("스트링 교체 날짜")
+    # 체크박스의 상태에 따라 세션 상태 업데이트
+    st.session_state['add_equipment'] = add_equipment
 
-        # 신발 정보 입력
-        if equipment_choice in ['신발', '전체']:
-            shoe_name = st.text_input("신발 정보")
-            shoe_change_date = st.date_input("신발 교체 날짜")
+    # 세션 상태에 따라 장비 추가 폼 표시 또는 숨김
+    if st.session_state.get('add_equipment', False):
+        # 장비 종류 선택
+        equipment_choice = st.radio("추가할 장비 이력을 선택:", ('스트링', '신발', '전체'))
 
-        submitted = st.form_submit_button("등록")
+        with st.form("equipment_form"):
+            player_name = st.selectbox("참가자", list(player_options.keys()), index=0)
+            player_id = player_options[player_name]
 
-        if submitted:
-            # 조건에 따라 함수 호출
-            if equipment_choice in ['스트링', '전체'] and string_name:
-                add_equipment_history(conn, player_id, string_name, string_change_date, None if equipment_choice == 'String' else shoe_name, None if equipment_choice == 'String' else shoe_change_date)
-            if equipment_choice in ['신발', '전체'] and shoe_name:
-                add_equipment_history(conn, player_id, None if equipment_choice == 'Shoe' else string_name, None if equipment_choice == 'Shoe' else string_change_date, shoe_name, shoe_change_date)
+            # 스트링 정보 입력
+            if equipment_choice in ['스트링', '전체']:
+                string_name = st.text_input("스트링 정보")
+                string_change_date = st.date_input("스트링 교체 날짜")
 
+            # 신발 정보 입력
+            if equipment_choice in ['신발', '전체']:
+                shoe_name = st.text_input("신발 정보")
+                shoe_change_date = st.date_input("신발 교체 날짜")
+
+            submitted = st.form_submit_button("등록")
+
+            if submitted:
+                # 조건에 따라 함수 호출
+                if equipment_choice in ['스트링', '전체'] and string_name:
+                    add_equipment_history(conn, player_id, string_name, string_change_date, None if equipment_choice == '스트링' else shoe_name, None if equipment_choice == '스트링' else shoe_change_date)
+                if equipment_choice in ['신발', '전체'] and shoe_name:
+                    add_equipment_history(conn, player_id, None if equipment_choice == '신발' else string_name, None if equipment_choice == '신발' else string_change_date, shoe_name, shoe_change_date)
+
+                # 성공 메시지 표시
+                st.success('장비 이력이 추가되었습니다.')
 
     # 장비 이력 출력부 (업데이트 후 새로고침)
     equiphistory = get_equiphistory(conn)
@@ -959,7 +964,47 @@ def page_player_setting():
         'ShoeChangeDate': 'max'  # 최신 신발 변경 날짜
     }
     grouped_df = df.groupby('Name', as_index=False).agg(agg_funcs)
-    st.table(grouped_df)
+
+    # HTML과 CSS를 사용하여 리스트로 데이터 표시
+    st.markdown("""
+        <style>
+        .equipment-list {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            background-color: #f9f9f9; /* 배경색 추가 */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+        .equipment-list:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .equipment-header {
+            font-size: 18px; /* 폰트 크기 조정 */
+            font-weight: bold;
+            color: #4CAF50; /* 폰트 색상 변경 */
+            margin-bottom: 5px; /* 하단 여백 추가 */
+        }
+        .equipment-detail {
+            font-size: 14px; /* 폰트 크기 조정 */
+            color: #555; /* 폰트 색상 변경 */
+            margin-top: 5px;
+            padding-left: 10px; /* 왼쪽 여백 추가 */
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    # 각 행을 리스트 아이템으로 변환하여 표시
+    for _, row in grouped_df.iterrows():
+        html_content = f"""
+        <div class="equipment-list">
+            <div class="equipment-header">{row['Name']}</div>
+            <div class="equipment-detail">🎾 스트링: {row['StringName']} <span style="color: #888;">(변경일: {row['StringChangeDate']})</span></div>
+            <div class="equipment-detail">👟 신발: {row['ShoeName']} <span style="color: #888;">(변경일: {row['ShoeChangeDate']})</span></div>
+        </div>
+        """
+        st.markdown(html_content, unsafe_allow_html=True)
+    
 
 
     
