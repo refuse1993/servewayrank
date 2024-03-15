@@ -756,18 +756,30 @@ def page_setting():
     st.subheader("설정")
     conn = create_connection('fsi_rank.db')
 
+    # 패스워드 입력
+    password = st.text_input("패스워드 입력", type="password")
+
     # Dropdown to select a table
     table_name = st.selectbox("초기화 할 테이블", ["Players", "Matches", "ExperienceHistory", "EquipmentHistory"])
 
+    # 패스워드 검증
+    correct_password = "password"  # 실제 패스워드로 변경 필요
+
     # Button to reset the table
     if st.button("DB 테이블 초기화"):
-        reset_table(conn, table_name)
-        st.success(f"Table {table_name} has been reset")
-    
+        if password == correct_password:
+            reset_table(conn, table_name)
+            st.success(f"Table {table_name} has been reset")     
+        else:
+            st.error("잘못된 패스워드입니다.")
+
     if st.button("DB 테이블 정보 조회"):
-        data, columns = get_table_select(conn, table_name)  # 컬럼 이름도 함께 받아옴
-        df = pd.DataFrame(data, columns=columns)
-        st.table(df)
+        if password == correct_password:
+            data, columns = get_table_select(conn, table_name)  # 컬럼 이름도 함께 받아옴
+            df = pd.DataFrame(data, columns=columns)
+            st.table(df)  
+        else:
+            st.error("잘못된 패스워드입니다.")
      
 # 메인 함수: 페이지 선택 및 렌더링
 def main():
