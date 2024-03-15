@@ -869,7 +869,7 @@ def page_add_Competition():
     
     if conn is not None:
         players = get_players(conn)  # 참가자 정보 가져오기
-        player_options = {name: player_id for player_id, name, _ in players}  # 참가자 이름과 ID를 매핑하는 딕셔너리 생성
+        player_options = {name: player_id for player_id, name, _, _  in players}  # 참가자 이름과 ID를 매핑하는 딕셔너리 생성
         
 
         
