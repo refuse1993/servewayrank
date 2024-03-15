@@ -4,6 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FuncFormatter
 import base64
+import math
 
 # 데이터베이스 연결 함수
 def create_connection(db_file):
@@ -157,18 +158,25 @@ def update_experience(conn, match_details, winning_team):
     # 각 참가자에 대한 경험치 변경 계산
     for player_id in all_players:
         player_tier = player_tiers[player_id]
+        current_exp = player_experiences[player_id]
 
         # 티어와 평균티어의 차이를 기반으로 가중치 다시 계산
         tier_difference = avg_tier - player_tier
-        weight = tier_difference  # 티어 차이를 반으로 줄여 가중치로 사용
+        weight = math.floor(tier_difference / 2)  # 티어 차이를 반으로 줄여 가중치로 사용
 
-        # 승리 팀과 패배 팀 결정
+        #승리 팀과 패배 팀 결정
         if (player_id in team_a_players and winning_team == 'A') or (player_id in team_b_players and winning_team == 'B'):
-            # 승리 시 경험치 상승 + 가중치 적용, 반올림
-            exp_change = round(3 + weight)
+            # 승리 시 경험치 상승
+            if current_exp >= 50:
+                exp_change = 2 + weight # 경험치 50 이상인 경우 승리 시 +2
+            else:
+                exp_change = 3 + weight # 경험치 50 미만인 경우 승리 시 +3
         else:
-            # 패배 시 경험치 하락 - 가중치 적용, 반올림
-            exp_change = round(-2 - (-weight))
+            # 패배 시 경험치 하락
+            if current_exp >= 50:
+                exp_change = -3 - (- weight)  # 경험치 50 이상인 경우 패배 시 -3
+            else:
+                exp_change = -2 - (- weight)  # 경험치 50 미만인 경우 패배 시 -2
 
         exp_changes[player_id] = exp_change
 
@@ -656,7 +664,7 @@ def page_view_ranking():
                 st.markdown("""
                 <style>
                     .win-rate {
-                        font-size: 18px; /* 승률 글자 크기 */
+                        font-size: 14px; /* 승률 글자 크기 */
                         font-weight: bold; /* 글꼴 굵기 */
                         margin-right: 5px; /* 우측 마진 */
                     }
