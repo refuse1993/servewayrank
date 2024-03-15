@@ -763,7 +763,7 @@ def page_setting():
     table_name = st.selectbox("초기화 할 테이블", ["Players", "Matches", "ExperienceHistory", "EquipmentHistory"])
 
     # 패스워드 검증
-    correct_password = "password"  # 실제 패스워드로 변경 필요
+    correct_password = "1626"  # 실제 패스워드로 변경 필요
 
     # Button to reset the table
     if st.button("DB 테이블 초기화"):
