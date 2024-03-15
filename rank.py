@@ -175,11 +175,12 @@ def update_experience(conn, match_details, winning_team):
         else:
             # 패배 시 경험치 하락
             if current_exp >= 50:
-                exp_change = -3 - (- weight)  # 경험치 50 이상인 경우 패배 시 -3
-            elif current_exp - exp_change - (- weight)< 0 :
-                exp_change = current_exp
+                exp_change = -3 + weight  # 정상적인 경험치 감소
             else:
-                exp_change = -2 - (- weight)  # 경험치 50 미만인 경우 패배 시 -2
+                if current_exp - 2 + weight < 0:  # 경험치가 0 이하로 떨어지는지 확인
+                    exp_change = -current_exp  # 경험치를 0으로 만들기 위한 조정
+                else:
+                    exp_change = -2 + weight  # 정상적인 경험치 감소
 
         exp_changes[player_id] = exp_change
 
