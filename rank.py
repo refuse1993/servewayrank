@@ -720,7 +720,7 @@ def page_view_ranking():
                     }}
                     .player-name {{
                         flex-grow: 1; /* 이름이 차지하는 공간을 최대로 */
-                        margin: 0 20px; /* 좌우 마진 */
+                        margin: 0 10x; /* 좌우 마진 */
                         font-size: 18px; /* 이름 크기 */
                         color: #ffffff; /* 이름 색상 */
                         font-weight: bold; /* 글꼴 굵기 */
