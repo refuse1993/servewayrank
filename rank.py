@@ -4,7 +4,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FuncFormatter
 import base64
-import math
 
 # 데이터베이스 연결 함수
 def create_connection(db_file):
@@ -162,7 +161,7 @@ def update_experience(conn, match_details, winning_team):
 
         # 티어와 평균티어의 차이를 기반으로 가중치 다시 계산
         tier_difference = avg_tier - player_tier
-        weight = math.floor(tier_difference / 2)  # 티어 차이를 반으로 줄여 가중치로 사용
+        weight = round(tier_difference / 2)  # 티어 차이를 반으로 줄여 가중치로 사용
 
         #승리 팀과 패배 팀 결정
         if (player_id in team_a_players and winning_team == 'A') or (player_id in team_b_players and winning_team == 'B'):
