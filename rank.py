@@ -324,7 +324,12 @@ def page_add_player():
         </style>
         <div class="playeradd-header">Player Add</div>
     """, unsafe_allow_html=True)
-    
+    st.markdown(f"""
+        <div style='text-align: center; color: #2c3e50; font-size: 20px; font-weight: 600; margin: 10px 0; padding: 10px; background-color: #ecf0f1; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);'>
+            신규 참가자 등록
+        </div>
+    """, unsafe_allow_html=True)
+            
     name = st.text_input('이름', placeholder='참가자 이름을 입력하세요.')
     experience = 10
     title = "Newbie"
@@ -337,6 +342,12 @@ def page_add_player():
             conn.close()
         else:
             st.error('데이터베이스에 연결할 수 없습니다.')
+    
+    st.markdown(f"""
+        <div style='text-align: center; color: #2c3e50; font-size: 20px; font-weight: 600; margin: 10px 0; padding: 10px; background-color: #ecf0f1; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);'>
+            기존 참가자 칭호 변경
+        </div>
+    """, unsafe_allow_html=True)
             
     if conn is not None:
         players = get_players(conn)
