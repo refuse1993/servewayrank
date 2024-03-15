@@ -4,7 +4,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FuncFormatter
 import base64
-import os
 
 # 데이터베이스 연결 함수
 def create_connection(db_file):
