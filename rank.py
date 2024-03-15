@@ -41,6 +41,23 @@ def add_player(conn, name, experience):
     conn.commit()
     return cur.lastrowid
 
+# 장비 추가 함수
+def add_equipment_history(conn, player_id, string_name, string_change_date, shoe_name, shoe_change_date):
+    cur = conn.cursor()
+    if string_name:  # 스트링 정보가 있으면 업데이트
+        cur.execute("""
+            INSERT INTO EquipmentHistory (PlayerID, StringName, StringChangeDate)
+            VALUES (?, ?, ?)
+        """, (player_id, string_name, string_change_date))
+    
+    if shoe_name:  # 신발 정보가 있으면 업데이트
+        cur.execute("""
+            INSERT INTO EquipmentHistory (PlayerID, ShoeName, ShoeChangeDate)
+            VALUES (?, ?, ?)
+        """, (player_id, shoe_name, shoe_change_date))
+
+    conn.commit()
+    
 # 참가자 목록 조회 함수
 def get_players(conn):
     cur = conn.cursor()
@@ -70,6 +87,62 @@ def get_player_matches(conn, player_id):
     """, (player_id_int, player_id_int, player_id_int))
     matches = cur.fetchall()
     return matches
+
+
+# 사용자의 경기 기록을 조회하는 함수
+def get_equiphistory(conn):
+    cur = conn.cursor()
+    cur.execute("""
+        WITH LatestString AS (
+            SELECT
+                PlayerID,
+                MAX(StringChangeDate) AS MaxStringDate
+            FROM
+                EquipmentHistory
+            GROUP BY
+                PlayerID
+        ),
+        LatestShoe AS (
+            SELECT
+                PlayerID,
+                MAX(ShoeChangeDate) AS MaxShoeDate
+            FROM
+                EquipmentHistory
+            GROUP BY
+                PlayerID
+        ),
+        StringInfo AS (
+            SELECT
+                eh.PlayerID,
+                eh.StringName,
+                eh.StringChangeDate
+            FROM
+                EquipmentHistory eh
+            JOIN LatestString ls ON eh.PlayerID = ls.PlayerID AND eh.StringChangeDate = ls.MaxStringDate
+        ),
+        ShoeInfo AS (
+            SELECT
+                eh.PlayerID,
+                eh.ShoeName,
+                eh.ShoeChangeDate
+            FROM
+                EquipmentHistory eh
+            JOIN LatestShoe ls ON eh.PlayerID = ls.PlayerID AND eh.ShoeChangeDate = ls.MaxShoeDate
+        )
+        SELECT
+            p.PlayerID,
+            p.Name,
+            si.StringName,
+            si.StringChangeDate,
+            shi.ShoeName,
+            shi.ShoeChangeDate
+        FROM
+            Players p
+        LEFT JOIN StringInfo si ON p.PlayerID = si.PlayerID
+        LEFT JOIN ShoeInfo shi ON p.PlayerID = shi.PlayerID
+    """)
+    equiphistory = cur.fetchall()
+    return equiphistory
 
 # 경험치 변경 계산 함수 (예시, 구체적인 계산 로직은 수정 필요)
 def calculate_exp_changes(conn, player_id, player_exp_changes, date):
@@ -837,7 +910,59 @@ def page_player_setting():
         <div class="playersetting-header">Player Equipment</div>
     """, unsafe_allow_html=True)
     
+    conn = create_connection('fsi_rank.db')  # 데이터베이스 연결
+    players = get_players(conn)  # 참가자 정보 가져오기
+    player_options = {name: player_id for player_id, name, _ in players}  # 참가자 이름과 ID를 매핑하는
+    
+    # 장비 종류 선택
+    equipment_choice = st.radio("추가할 장비 이력을 선택:", ('스트링', '신발', '전체'))
+    
+    string_name = None
+    string_change_date = None
+    shoe_name = None
+    shoe_change_date = None
+    
+    with st.form("equipment_form"):
+        player_name = st.selectbox("참가자", list(player_options.keys()), index=0)
+        player_id = player_options[player_name]
 
+        # 스트링 정보 입력
+        if equipment_choice in ['스트링', '전체']:
+            string_name = st.text_input("스트링 정보")
+            string_change_date = st.date_input("스트링 교체 날짜")
+
+        # 신발 정보 입력
+        if equipment_choice in ['신발', '전체']:
+            shoe_name = st.text_input("신발 정보")
+            shoe_change_date = st.date_input("신발 교체 날짜")
+
+        submitted = st.form_submit_button("등록")
+
+        if submitted:
+            # 조건에 따라 함수 호출
+            if equipment_choice in ['스트링', '전체'] and string_name:
+                add_equipment_history(conn, player_id, string_name, string_change_date, None if equipment_choice == 'String' else shoe_name, None if equipment_choice == 'String' else shoe_change_date)
+            if equipment_choice in ['신발', '전체'] and shoe_name:
+                add_equipment_history(conn, player_id, None if equipment_choice == 'Shoe' else string_name, None if equipment_choice == 'Shoe' else string_change_date, shoe_name, shoe_change_date)
+
+
+    # 장비 이력 출력부 (업데이트 후 새로고침)
+    equiphistory = get_equiphistory(conn)
+    df = pd.DataFrame(equiphistory, columns=['PlayerID', 'Name', 'StringName', 'StringChangeDate', 'ShoeName', 'ShoeChangeDate'])
+    df.replace({None: ''}, inplace=True)
+    
+    # 최신 날짜 기준으로 집계
+    agg_funcs = {
+        'StringName': 'last',  # 최신 스트링 이름
+        'StringChangeDate': 'max',  # 최신 스트링 변경 날짜
+        'ShoeName': 'last',  # 최신 신발 이름
+        'ShoeChangeDate': 'max'  # 최신 신발 변경 날짜
+    }
+    grouped_df = df.groupby('Name', as_index=False).agg(agg_funcs)
+    st.table(grouped_df)
+
+
+    
 def page_setting():
     st.subheader("설정")
     conn = create_connection('fsi_rank.db')
@@ -869,22 +994,23 @@ def page_setting():
      
 # 메인 함수: 페이지 선택 및 렌더링
 def main():
-    st.sidebar.title("메뉴")
-    menu = ["랭킹", "전적", "경기 결과 추가","참가자 장비", "참가자 등록", "설정" ]
-    choice = st.sidebar.selectbox("메뉴 선택", menu)
+    # 메뉴 항목과 해당 함수의 매핑
+    menu_items = {
+        "랭킹": page_view_ranking,
+        "전적": page_view_players,
+        "경기 결과 추가": page_add_match,
+        "참가자 장비": page_player_setting,
+        "참가자 등록": page_add_player,
+        "설정": page_setting
+    }
+    
+    for item, func in menu_items.items():
+        if st.sidebar.button(item):
+            st.session_state['page'] = item
 
-    if choice == "랭킹":
-        page_view_ranking()
-    elif choice == "전적":
-        page_view_players()
-    elif choice == "경기 결과 추가":
-        page_add_match()
-    elif choice == "참가자 장비":
-        page_player_setting()
-    elif choice == "참가자 등록":
-        page_add_player()
-    elif choice == "설정":
-        page_setting()
+    # 현재 선택된 페이지에 해당하는 함수 호출
+    if 'page' in st.session_state:
+        menu_items[st.session_state['page']]()
         
 if __name__ == '__main__':
     main()
