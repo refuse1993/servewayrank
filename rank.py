@@ -13,7 +13,7 @@ def create_connection(db_file):
         conn = sqlite3.connect(db_file)
         return conn
     except Exception as e:
-        st.error(f"데이터베이스 연결 중 에러 발생: {e}")
+        st.error(f"데이터베이스 연결 중 에러 발생 : {e}")
     return conn
 
 def get_image_base64(path):
