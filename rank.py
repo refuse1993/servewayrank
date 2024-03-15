@@ -16,20 +16,6 @@ def create_connection(db_file):
         st.error(f"데이터베이스 연결 중 에러 발생: {e}")
     return conn
 
-def download_db_file():
-    db_file_path = "fsi_rank.db"  # 데이터베이스 파일 경로
-    if os.path.exists(db_file_path):
-        with open(db_file_path, "rb") as file:
-            db_file_contents = file.read()
-        st.download_button(
-            label="Download DB File",
-            data=db_file_contents,
-            file_name="fsi_rank.db",
-            mime="application/octet-stream"
-        )
-    else:
-        st.error("DB file not found.")
-
 def get_image_base64(path):
     with open(path, "rb") as img_file:
         return base64.b64encode(img_file.read()).decode()
@@ -1060,9 +1046,6 @@ def page_player_setting():
         """
         st.markdown(html_content, unsafe_allow_html=True)
     
-
-
-    
 def page_setting():
     st.subheader("설정")
     conn = create_connection('fsi_rank.db')
@@ -1072,10 +1055,6 @@ def page_setting():
 
     # Dropdown to select a table
     table_name = st.selectbox("초기화 할 테이블", ["Players", "Matches", "ExperienceHistory", "EquipmentHistory"])
-    
-    download_button = st.button("Download DB File")
-    if download_button:
-        download_db_file()
 
     # 패스워드 검증
     correct_password = "1626"  # 실제 패스워드로 변경 필요
