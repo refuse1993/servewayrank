@@ -665,34 +665,7 @@ def page_view_ranking():
                 total_matches = len(df_matches) if len(df_matches) > 0 else 0
                 # 승률 계산 (승리 횟수 / 전체 경기 횟수)
                 total_win_rate = total_wins / len(df_matches) if len(df_matches) > 0 else 0
-            
-
-                # 승률 표시를 위한 스타일 설정
-                # 스타일 설정
-                st.markdown("""
-                <style>
-                    .win-rate {
-                        font-size: 14px; /* 승률 글자 크기 */
-                        font-weight: bold; /* 글꼴 굵기 */
-                        margin-right: 5px; /* 우측 마진 */
-                    }
-                    .win-loss-stats {
-                        font-size: 13px; /* 승패 글자 크기 조정 */
-                        color: #ffffff; /* 글자 색상 */
-                        font-weight: bold; /* 글꼴 굵기 */
-                        margin: 0 5px; /* 좌우 마진 조정 */
-                    }
-                    .player-level-box {
-                        display: inline-block; /* 인라인 블록으로 설정 */
-                        padding: 5px 5px; /* 패딩 조정 */
-                        border-radius: 10px; /* 둥근 모서리 */
-                        background-color: #333333; /* 박스 배경 색상 */
-                        color: #ffffff; /* 글자 색상 */
-                        font-weight: bold; /* 글꼴 굵기 */
-                        text-align: center; /* 텍스트 중앙 정렬 */
-                    }
-                </style>
-            """, unsafe_allow_html=True)
+        
 
             print(total_win_rate)
             # 승률에 따른 색상 조정
@@ -702,6 +675,26 @@ def page_view_ranking():
             # 페이지 스타일 설정 (각 랭킹마다 다른 배경색 적용)
             st.markdown(f"""
                 <style>
+                    .win-rate {{
+                        font-size: 14px; /* 승률 글자 크기 */
+                        font-weight: bold; /* 글꼴 굵기 */
+                        margin-right: 5px; /* 우측 마진 */
+                    }}
+                    .win-loss-stats {{
+                        font-size: 13px; /* 승패 글자 크기 조정 */
+                        color: #ffffff; /* 글자 색상 */
+                        font-weight: bold; /* 글꼴 굵기 */
+                        margin: 0 5px; /* 좌우 마진 조정 */
+                    }}
+                    .player-level-box {{
+                        display: inline-block; /* 인라인 블록으로 설정 */
+                        padding: 5px 5px; /* 패딩 조정 */
+                        border-radius: 10px; /* 둥근 모서리 */
+                        background-color: #333333; /* 박스 배경 색상 */
+                        color: #ffffff; /* 글자 색상 */
+                        font-weight: bold; /* 글꼴 굵기 */
+                        text-align: center; /* 텍스트 중앙 정렬 */
+                    }}
                     .ranking-row-{index} {{
                         display: flex;
                         align-items: center;
