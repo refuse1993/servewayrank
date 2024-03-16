@@ -104,6 +104,57 @@ def get_player_matches(conn, player_id):
     return matches
 
 # 사용자의 경기 기록을 조회하는 함수
+def get_all_matches(conn):
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT MatchID, m.Date, m.IsDoubles, m.TeamAScore, m.TeamBScore, m.WinningTeam, 
+           p1.Name AS TeamAPlayer1, p2.Name AS TeamAPlayer2, p3.Name AS TeamBPlayer1, p4.Name AS TeamBPlayer2
+        FROM Matches m
+        JOIN Players p1 ON m.TeamAPlayer1ID = p1.PlayerID
+        LEFT JOIN Players p2 ON m.TeamAPlayer2ID = p2.PlayerID
+        JOIN Players p3 ON m.TeamBPlayer1ID = p3.PlayerID
+        LEFT JOIN Players p4 ON m.TeamBPlayer2ID = p4.PlayerID
+        ORDER BY m.Date ASC
+        """)
+    matches = cur.fetchall()
+    return matches
+
+def del_match(conn,matchid):
+    cur = conn.cursor()
+    try:
+        # Experience 테이블에서 해당 MatchID를 가진 행을 찾아 이전 경험치로 Player 테이블을 업데이트합니다.
+        cur.execute("""
+            UPDATE Players
+            SET Experience = (
+                SELECT PreviousExperience
+                FROM Experience
+                WHERE MatchID = ? AND Players.PlayerID = Experience.PlayerID
+            )
+            WHERE PlayerID IN (
+                SELECT PlayerID
+                FROM Experience
+                WHERE MatchID = ?
+            )
+        """, (matchid, matchid))
+
+        # 해당 MatchID를 가진 Experience 테이블의 행을 삭제합니다.
+        cur.execute("DELETE FROM Experience WHERE MatchID = ?", (matchid,))
+
+        # Match 테이블에서 해당 MatchID를 가진 행을 삭제합니다.
+        cur.execute("DELETE FROM Match WHERE MatchID = ?", (matchid,))
+
+        # 변경 사항을 커밋합니다.
+        conn.commit()
+    except sqlite3.Error as e:
+        # 오류가 발생하면 롤백합니다.
+        conn.rollback()
+        print(f"An error occurred: {e}")
+    finally:
+        # 데이터베이스 연결을 닫습니다.
+        conn.close()
+    
+
+# 사용자의 경기 기록을 조회하는 함수
 def get_equiphistory(conn):
     cur = conn.cursor()
     cur.execute("""
@@ -847,6 +898,218 @@ def page_add_match():
     
         conn.close()
 
+def page_remove_match():
+    st.markdown("""
+        <style>
+        .matchadd-header {
+            font-size: 24px;
+            font-weight: bold;
+            background: linear-gradient(to right, #5C97BF, #1B4F72);
+            color: #FFFFFF;  # 텍스트 색상을 투명하게 설정하여 배경 그라데이션을 보이게 함
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        </style>
+        <div class="matchadd-header">Match Add</div>
+    """, unsafe_allow_html=True)
+        
+    conn = create_connection('fsi_rank.db')
+    
+    if conn is not None:
+        
+        with st.container():
+            # '복식', '단식', '전체' 중 하나를 선택할 수 있는 라디오 버튼 생성
+            match_option = st.radio(
+                "Matches Filter",
+                ('전체', '단식', '복식'),
+                horizontal=True
+            )
+
+            # 사용자 선택에 따라 변수 설정
+            show_doubles = match_option == '복식'
+            show_singles = match_option == '단식'
+            show_all = match_option == '전체'
+            
+        matches = get_all_matches(conn)
+        
+        if matches:
+            # '날짜', '복식 여부', 'A팀 점수', 'B팀 점수', '승리 팀', 'A팀원1', 'A팀원2', 'B팀원1', 'B팀원2', '결과' 컬럼을 포함하여 DataFrame 생성
+            df_matches = pd.DataFrame(matches, columns=['MATCHID','날짜', '복식 여부', 'A팀 점수', 'B팀 점수', '승리 팀', 'A팀원1', 'A팀원2', 'B팀원1', 'B팀원2'])
+
+            # 경기 결과가 최신 순으로 정렬되도록 날짜 기준 내림차순 정렬
+            df_matches = df_matches.sort_values(by='MATCHID', ascending=False)
+
+            # 복식 경기 데이터만 필터링
+            doubles_matches = df_matches[df_matches['복식 여부'] == True]
+            # 단식 경기 데이터만 필터링
+            singles_matches = df_matches[df_matches['복식 여부'] == False]
+
+            # 승률 표시를 위한 스타일 설정
+            # 스타일 설정
+            st.markdown("""
+                <style>
+                    .info-box {
+                        background-color: #333333;
+                        border-radius: 10px;
+                        padding: 10px;
+                        margin: 10px 0;
+                    }
+                    .info-text {
+                        color: #ffffff;
+                        font-size: 16px;
+                        margin: 0;
+                    }
+                    .highlight {
+                        font-weight: bold;
+                        color: #4caf50;
+                    }
+                   .match-info {
+                        font-family: Arial, sans-serif;
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: space-between;
+                        margin-bottom: 10px;
+                        padding: 15px;
+                        border-radius: 8px;
+                        background-color: #333333;  /* 디자인 변경 */
+                        color: #ffffff;  /* 글자 색상 변경 */
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.2);  /* 그림자 효과 추가 */
+                    }
+                    .match-details {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                    }
+                    .type-box, .result-box {
+                        padding: 2px 6px;
+                        border-radius: 4px;
+                        font-weight: bold;
+                    }
+                    .type-box {
+                        padding: 2px 6px;
+                        border-radius: 4px;
+                        font-weight: bold;
+                        background-color: #3498db;
+                        color: #fff;
+                        margin-right: 10px;
+                    }
+                    .match-type {
+                        background-color: #3498db;
+                        color: #fff;
+                        padding: 2px 6px;  /* 패딩 조절 */
+                        border-radius: 5px;
+                        font-weight: bold;
+                        font-size: 14px;  /* 글자 크기 조절 */
+                    }
+                    .vs {
+                        font-weight: bold;
+                        color: #e74c3c;  /* VS 색상 */
+                        margin: 0 5px;  /* 좌우 마진 조절 */
+                    }
+                    .result-box {
+                        color: #fff;
+                    }
+                    .win {
+                        background-color: #2ecc71;
+                    }
+                    .lose {
+                        background-color: #e74c3c;
+                    }
+                    .single {
+                        background-color: #44DBCA;
+                    }
+                    .double {
+                        background-color: #AB44DB;
+                    }
+                    .date {
+                        font-style: italic;
+                        margin-right: 15px;
+                    }
+                    .highlight-1 {
+                        font-weight: bold;
+                        color: #3498db;  /* 하이라이트된 이름 색상 */
+                        border-radius: 4px;
+                    }
+                    .score {
+                        font-weight: bold;
+                        color: #27ae60;  /* 스코어 색상 */
+                        border-radius: 4px;
+                    }
+                </style>
+            """, unsafe_allow_html=True)
+
+            if show_doubles:
+                filtered_matches = df_matches[df_matches['복식 여부'] == True]  # 복식 경기만 필터링
+            elif show_singles:
+                filtered_matches = df_matches[df_matches['복식 여부'] == False]  # 단식 경기만 필터링
+            else:  # show_all을 누르거나 아무것도 선택하지 않았을 때
+                filtered_matches = df_matches  # 전체 경기 결과
+                
+            previous_date = None
+            
+            # 각 경기별로 복식 여부를 확인하고, 해당하는 텍스트 형식으로 출력
+            for _, row in filtered_matches.iterrows():
+                matchid = row['MATCHID']
+                is_doubles = row['복식 여부']
+                match_date = row['날짜']
+                team_a_member1 = row['A팀원1']
+                team_a_score = row['A팀 점수']
+                team_b_score = row['B팀 점수']
+                team_b_member1 = row['B팀원1']
+                result = '삭제'
+
+                # 복식 경기일 경우
+                if is_doubles:
+                    team_a_member2 = row['A팀원2']
+                    team_b_member2 = row['B팀원2']
+                    match_info = f"{team_a_member1} {team_a_member2} {team_a_score} vs {team_b_score} {team_b_member1} {team_b_member2}"
+                    match_type = "복식" 
+                else:  # 단식 경기일 경우
+                    match_info = f"{team_a_member1} {team_a_score} vs {team_b_score} {team_b_member1}"
+                    match_type = "단식" 
+
+                # 승리팀 점수와 해당 참가자 이름 하이라이트 적용
+                
+                match_info = match_info.replace(" vs ", f"<span class='vs'>vs</span>")
+
+                if team_a_score > team_b_score:
+                    match_info = match_info.replace(f"{team_a_score}", f"<span class='score'>{team_a_score}</span>")
+                elif team_a_score < team_b_score:
+                    match_info = match_info.replace(f"{team_b_score}", f"<span class='score'>{team_b_score}</span>")
+
+                match_class = "single" if match_type == "단식" else "double"
+
+                # 현재 날짜가 이전에 표시된 날짜와 다를 경우에만 날짜 표시
+                if match_date != previous_date:
+                    st.markdown(f"<div class='date'>{match_date}</div>", unsafe_allow_html=True)
+
+                col1, col2 = st.columns([0.9, 0.1])
+                with col1:
+                    st.markdown(f"""
+                        <div class="match-info">
+                            <div class="match-details">
+                                <div class="{match_class} match-type">{match_type}</div>
+                                <div>{match_info}</div>
+                                <div class="lose result-box">{matchid}</div>
+                            </div>
+                        </div>
+                    """, unsafe_allow_html=True)
+
+                with col2:
+                    # 각 경기마다 고유한 키를 가진 삭제 버튼 생성
+                    if st.button('삭제', key=f"delete-{matchid}"):
+                        #del_match(conn, matchid)
+                        st.write(matchid)
+            
+                
+                # 현재 행의 날짜를 이전 날짜로 설정
+                previous_date = match_date
+
+
+        conn.close()
+        
 def page_add_Competition():
     st.markdown("""
         <style>
@@ -1381,6 +1644,7 @@ def main():
         "랭킹": page_view_ranking,
         "전적": page_view_players,
         "경기 결과 추가": page_add_match,
+        "경기 결과 삭제": page_remove_match,
         "대회 경기 추가": page_add_Competition,
         "참가자 장비": page_player_setting,
         "참가자 등록": page_add_player,
