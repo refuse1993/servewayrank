@@ -1100,8 +1100,7 @@ def page_remove_match():
                 with col2:
                     # 각 경기마다 고유한 키를 가진 삭제 버튼 생성
                     if st.button('삭제', key=f"delete-{matchid}"):
-                        #del_match(conn, matchid)
-                        st.write(matchid)
+                        del_match(conn, matchid)
             
                 
                 # 현재 행의 날짜를 이전 날짜로 설정
