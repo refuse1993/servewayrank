@@ -362,7 +362,6 @@ def page_add_player():
             if not input_title:
                 st.error('변경할 칭호를 입력하세요.')
             else :
-                print(selected_name,selected_id,input_title)
                 update_title(conn, selected_id,input_title)
                 st.success(f'칭호 "{input_title}"가 성공적으로 추가되었습니다.')
              
