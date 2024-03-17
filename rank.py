@@ -915,7 +915,13 @@ def page_remove_match():
         </style>
         <div class="matchadd-header">Match Add</div>
     """, unsafe_allow_html=True)
-        
+    
+    # 패스워드 입력
+    password = st.text_input("패스워드 입력", type="password")
+
+    # 패스워드 검증
+    correct_password = "1626"  # 실제 패스워드로 변경 필요
+                
     conn = create_connection('fsi_rank.db')
     
     if conn is not None:
@@ -1099,9 +1105,12 @@ def page_remove_match():
 
                 with col2:
                     # 각 경기마다 고유한 키를 가진 삭제 버튼 생성
-                    if st.button('삭제', key=f"delete-{matchid}"):
-                        del_match(conn, matchid)
-                        st.success(f"{matchid}가 삭제되었습니다.")
+                    if st.button('삭제', key=f"delete-{matchid}"):           
+                        if password == correct_password:
+                            del_match(conn, matchid)
+                            st.success(f"{matchid}가 삭제되었습니다.")
+                        else:
+                            st.error("잘못된 패스워드입니다.")
             
                 # 현재 행의 날짜를 이전 날짜로 설정
                 previous_date = match_date
