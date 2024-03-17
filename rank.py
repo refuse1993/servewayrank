@@ -19,6 +19,33 @@ def get_image_base64(path):
     with open(path, "rb") as img_file:
         return base64.b64encode(img_file.read()).decode()
 
+# 로그인 함수: 사용자 이름과 비밀번호를 입력 받아 검증
+def login(username, password):
+    # 예제를 위한 간단한 인증: 실제 앱에서는 보안을 강화해야 합니다.
+    return username == "serveway" and password == "0410"
+
+
+# 로그아웃 함수: 사용자의 로그인 상태를 변경
+def logout():
+    st.session_state['authenticated'] = False
+    st.experimental_rerun()
+
+# 로그인 폼을 사이드바에 표시
+def display_login_sidebar():
+    with st.sidebar:
+        st.title("로그인")
+        username = st.text_input("사용자 이름", key="username")
+        password = st.text_input("비밀번호", type="password", key="password")
+        
+        if st.button("로그인"):
+            # 로그인 함수를 호출하여 인증
+            if login(username, password):
+                st.success("로그인 성공!")
+                st.session_state['authenticated'] = True  # 세션 상태에 인증 상태 저장
+                st.experimental_rerun()  # 로그인 성공 후 앱을 다시 실행
+            else:
+                st.error("로그인 실패. 사용자 이름 또는 비밀번호를 확인하세요.")
+                
 # Function to reset a table
 def reset_table(conn, table_name):
     cur = conn.cursor()
@@ -946,7 +973,14 @@ def page_remove_match():
 
             # 경기 결과가 최신 순으로 정렬되도록 날짜 기준 내림차순 정렬
             df_matches = df_matches.sort_values(by='MATCHID', ascending=False)
-
+            match_id = max(df_matches['MATCHID'])
+            # 각 경기마다 고유한 키를 가진 삭제 버튼 생성
+            if st.button('가장 최근 경기 기록 삭제', key=f"delete-{match_id}"):           
+                if password == correct_password:
+                    #del_match(conn, match_id)
+                    st.success(f"MatchID-{match_id}가 삭제되었습니다.")
+                else:
+                    st.error("잘못된 패스워드입니다.")
             # 복식 경기 데이터만 필터링
             doubles_matches = df_matches[df_matches['복식 여부'] == True]
             # 단식 경기 데이터만 필터링
@@ -1090,9 +1124,7 @@ def page_remove_match():
                 if match_date != previous_date:
                     st.markdown(f"<div class='date'>{match_date}</div>", unsafe_allow_html=True)
 
-                col1, col2 = st.columns([0.9, 0.1])
-                with col1:
-                    st.markdown(f"""
+                st.markdown(f"""
                         <div class="match-info">
                             <div class="match-details">
                                 <div class="{match_class} match-type">{match_type}</div>
@@ -1101,15 +1133,6 @@ def page_remove_match():
                             </div>
                         </div>
                     """, unsafe_allow_html=True)
-
-                with col2:
-                    # 각 경기마다 고유한 키를 가진 삭제 버튼 생성
-                    if st.button('삭제', key=f"delete-{matchid}"):           
-                        if password == correct_password:
-                            del_match(conn, matchid)
-                            st.success(f"{matchid}가 삭제되었습니다.")
-                        else:
-                            st.error("잘못된 패스워드입니다.")
             
                 # 현재 행의 날짜를 이전 날짜로 설정
                 previous_date = match_date
@@ -1647,6 +1670,13 @@ def main_page():
 
 # 메인 함수: 페이지 선택 및 렌더링
 def main():
+    
+    # 로그인이 되지 않은 경우 사이드바에 로그인 폼 표시
+    if 'authenticated' not in st.session_state or not st.session_state['authenticated']:
+        display_login_sidebar()
+        main_page()
+        return
+    
     menu_items = {
         "랭킹": page_view_ranking,
         "전적": page_view_players,
@@ -1657,6 +1687,7 @@ def main():
         "참가자 등록": page_add_player,
         "설정": page_setting
     }
+    
     st.sidebar.markdown("""
         <style>
             .sidebar-title {
@@ -1677,6 +1708,11 @@ def main():
     for item, func in menu_items.items():
         if st.sidebar.button(item):
             st.session_state['page'] = item
+            
+            
+    # 로그아웃 버튼 추가
+    if st.sidebar.button("로그아웃"):
+        logout()
 
     # 현재 선택된 페이지에 해당하는 함수 호출
     if 'page' in st.session_state:
