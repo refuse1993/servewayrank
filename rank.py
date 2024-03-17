@@ -122,28 +122,28 @@ def get_all_matches(conn):
 def del_match(conn, matchid):
     cur = conn.cursor()
     match_id_int = int(matchid)
-    print(match_id_int)
+    st.write(match_id_int)
     try:
         # Experience 테이블에서 해당 MatchID를 가진 행을 찾아 이전 경험치로 Player 테이블을 업데이트합니다.
         cur.execute("""
             UPDATE Players
             SET Experience = (
                 SELECT PreviousExperience
-                FROM Experience
-                WHERE MatchID = ? AND Players.PlayerID = Experience.PlayerID
+                FROM ExperienceHistory
+                WHERE MatchID = ? AND Players.PlayerID = ExperienceHistory.PlayerID
             )
             WHERE PlayerID IN (
                 SELECT PlayerID
-                FROM Experience
+                FROM ExperienceHistory
                 WHERE MatchID = ?
             )
         """, (match_id_int, match_id_int))
 
         # 해당 MatchID를 가진 Experience 테이블의 행을 삭제합니다.
-        cur.execute("DELETE FROM Experience WHERE MatchID = ?", (match_id_int,))
+        cur.execute("DELETE FROM ExperienceHistory WHERE MatchID = ?", (match_id_int,))
 
         # Match 테이블에서 해당 MatchID를 가진 행을 삭제합니다.
-        cur.execute("DELETE FROM Match WHERE MatchID = ?", (match_id_int,))
+        cur.execute("DELETE FROM Matches WHERE MatchID = ?", (match_id_int,))
 
         # 변경 사항을 커밋합니다.
         conn.commit()
