@@ -119,9 +119,10 @@ def get_all_matches(conn):
     matches = cur.fetchall()
     return matches
 
-def del_match(conn,matchid):
+def del_match(conn, matchid):
     cur = conn.cursor()
     match_id_int = int(matchid)
+    print(match_id_int)
     try:
         # Experience 테이블에서 해당 MatchID를 가진 행을 찾아 이전 경험치로 Player 테이블을 업데이트합니다.
         cur.execute("""
