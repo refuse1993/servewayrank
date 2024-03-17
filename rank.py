@@ -2,6 +2,8 @@ import streamlit as st
 import sqlite3
 import pandas as pd
 import matplotlib.pyplot as plt
+import itertools
+import random
 from matplotlib.ticker import FuncFormatter
 import base64
 
@@ -23,7 +25,6 @@ def get_image_base64(path):
 def login(username, password):
     # 예제를 위한 간단한 인증: 실제 앱에서는 보안을 강화해야 합니다.
     return username == "serveway" and password == "0410"
-
 
 # 로그아웃 함수: 사용자의 로그인 상태를 변경
 def logout():
@@ -383,7 +384,47 @@ def calculate_tournament_scores(matches):
             for player in match['team_b']:
                 scores[player] = scores.get(player, 0) + (100 if match['winning_team'] == 'B' else 50)
     return scores
-  
+
+def generate_balanced_matches(players, games_per_player):
+    # 플레이어의 경험치를 매핑합니다.
+    player_experience = {player['id']: player['experience'] for player in players}
+    
+    # 경기 결과를 저장할 리스트입니다.
+    matches = []
+    
+    # 플레이어별 게임 카운트를 추적합니다.
+    game_counts = {player['id']: 0 for player in players}
+
+    # 가능한 모든 4인 플레이어 조합을 생성합니다.
+    all_player_combinations = list(itertools.combinations([player['id'] for player in players], 4))
+
+    for combo in all_player_combinations:
+        # 조합 내에서 모든 플레이어가 지정된 게임 수를 초과하지 않는지 확인합니다.
+        if all(game_counts[player_id] < games_per_player for player_id in combo):
+            min_diff = float('inf')  # 최소 경험치 차이를 초기화합니다.
+            best_match = None  # 최적의 매치를 저장할 변수를 초기화합니다.
+
+            # 이 조합에서 가능한 모든 2인 팀을 생성합니다.
+            for team1_ids in itertools.combinations(combo, 2):
+                team2_ids = tuple(set(combo) - set(team1_ids))
+                
+                # 팀 경험치 합을 계산합니다.
+                team1_exp = sum(player_experience[player_id] for player_id in team1_ids)
+                team2_exp = sum(player_experience[player_id] for player_id in team2_ids)
+
+                # 팀 경험치 차이를 최소화하는 조합을 찾습니다.
+                if abs(team1_exp - team2_exp) <= min_diff:
+                    min_diff = abs(team1_exp - team2_exp)
+                    best_match = (team1_ids, team2_ids)
+
+            # 최적의 매치를 찾았다면 결과에 추가하고 게임 카운트를 업데이트합니다.
+            if best_match:
+                matches.append(best_match)
+                for player_id in best_match[0] + best_match[1]:
+                    game_counts[player_id] += 1
+
+    return matches
+    
 # 사용자 등록 페이지
 def page_add_player():
     
@@ -1141,8 +1182,6 @@ def page_add_Competition():
         players = get_players(conn)  # 참가자 정보 가져오기
         player_options = {name: player_id for player_id, name, _, _  in players}  # 참가자 이름과 ID를 매핑하는 딕셔너리 생성
         
-
-        
         Competition_name = st.text_input("대회명")
         # 모든 경기에 대한 공통 정보 입력
         date = st.date_input("대회 날짜")
@@ -1430,22 +1469,270 @@ def page_view_ranking():
     else:
         st.error("랭킹 정보를 가져오는 데 실패했습니다.")
 
-def page_player_setting():
+def page_generate_game():    
     st.markdown("""
         <style>
         .playersetting-header {
             font-size: 24px;
             font-weight: bold;
             background: linear-gradient(to right, #f1c40f, #f39c12);
-            color: #FFFFFF;
+            color: #FFFFFF;  # 텍스트 색상을 투명하게 설정하여 배경 그라데이션을 보이게 함
             padding: 10px;
             border-radius: 10px;
             text-align: center;
             margin-bottom: 20px;
         }
         </style>
-        <div class="playersetting-header">Player Equipment</div>
+        <div class="playersetting-header">Generate Matches</div>
     """, unsafe_allow_html=True)
+    
+    st.markdown("""
+        <style>
+            .recommendation-box {
+                background-color: #2a9d8f;  /* 적절한 배경색 설정 */
+                color: #ffffff;  /* 텍스트 색상을 흰색으로 설정 */
+                padding: 3px;
+                border-radius: 10px;  /* 박스 모서리 둥글게 설정 */
+                margin: 5px 0px;  /* 상하 마진 설정 */
+                text-align: center;  /* 텍스트 중앙 정렬 */
+                font-size: 8px;  /* 폰트 크기 설정 */
+                box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);  /* 그림자 효과 추가 */
+            }
+        </style>
+        <div class="recommendation-box">
+            ※ 참가자 5인 - 4경기, 참가자 8인 - 5경기
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # 경기 스케줄 생성 (각 참가자당 2경기)
+    conn = create_connection('fsi_rank.db')
+    
+    if conn is not None:
+        players = get_players(conn)  # 참가자 정보와 경험치 가져오기
+        player_options = {name: (player_id, experience) for player_id, name, experience, _ in players}
+
+        # Submit 버튼이 눌렸는지 추적하기 위한 session_state 초기화
+        if 'submitted' not in st.session_state:
+            st.session_state.submitted = False
+
+        # 선택된 참가자 수를 추적하기 위한 session_state 초기화
+        if 'selected_count' not in st.session_state:
+            st.session_state.selected_count = 0
+
+        # 'st.expander'를 사용하여 입력 폼을 포함하는 접을 수 있는 섹션 생성
+        with st.expander("참가자 선택", expanded=not st.session_state.submitted):
+            num_matches = st.number_input("참가자별 필요 경기 수", min_value=1, max_value=10, value=1)
+
+            with st.form("player_selection"):
+                all_players = []
+                cols = st.columns(3)
+                col_index = 0
+
+                for name, (player_id, experience) in player_options.items():
+                    is_selected = cols[col_index].checkbox(name, key=f"checkbox_{player_id}")
+                    if is_selected:
+                        players_info = {
+                            "id": player_id,
+                            "name": name,
+                            "experience": experience
+                        }
+                        all_players.append(players_info)
+                    col_index = (col_index + 1) % len(cols)
+
+                # Submit 버튼
+                submitted = st.form_submit_button("등록 완료")
+
+                if submitted:
+                    # 선택된 참가자의 수를 업데이트
+                    st.session_state.selected_count = len(all_players)
+                    # Submit 상태 업데이트
+                    st.session_state.submitted = True
+
+    if st.session_state.submitted:
+        if st.session_state.selected_count >= 4:
+            names = ', '.join([player['name'] for player in all_players])
+            st.markdown(f"""
+            <div style="border-radius: 5px; padding: 10px 20px; margin: 5px 0; background: linear-gradient(145deg, #6e3cbc, #ff4757); box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: all 0.3s ease-in-out;">
+                <p style="margin: 0; font-size: 14px; text-align: center; color: #ffffff; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">Selected Players: <strong>{names}</strong></p>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.error("At least 4 players need to be selected.")
+            # 선택이 충분하지 않으면 submitted 상태를 다시 False로 설정
+            st.session_state.submitted = False
+        
+
+        # 'Generate Matches' 버튼 추가
+        if st.button('Generate Doubles Matches'):
+            # 버튼이 클릭되면 경기 스케줄 생성
+            matches_info = generate_balanced_matches(all_players, num_matches)
+            # 각 경기에 대한 정보 표시
+            game_counts = {player['id']: 0 for player in all_players}
+            for match_index, match in enumerate(matches_info, start=1):
+                team1, team2 = match    
+                for player_id in match[0] + match[1]:  # match[0]과 match[1]은 각각 team1과 team2의 선수 id를 나타냄
+                    game_counts[player_id] += 1
+                team1_players = [(player['name'], player['experience']) for player in all_players if player['id'] in team1]
+                team2_players = [(player['name'], player['experience']) for player in all_players if player['id'] in team2]
+
+                team1_avg_exp = sum(exp for _, exp in team1_players) / 2
+                team2_avg_exp = sum(exp for _, exp in team2_players) / 2
+                
+                st.markdown(f"""
+                <style>
+                    .match-number-box {{
+                        background-color: #f9c74f; /* 경기 번호 박스 색상 */
+                        color: #333; /* 글씨 색상 */
+                        border-radius: 5px;
+                        padding: 3px 6px;
+                        font-size: 10px;
+                        font-weight: bold;
+                        margin-bottom: 10px; /* 'avg level'과의 여백 */
+                        text-align: center;
+                    }}
+                    .match-box {{
+                        background-color: #2a9d8f; /* 짙은 녹색 */
+                        border-radius: 20px;
+                        padding: 10px;
+                        margin: 20px 0;
+                        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+                        color: #ffffff;
+                    }}
+                    .team-vs-team {{
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                    }}
+                    .team-box {{
+                        flex: 1;
+                        text-align: center;
+                        padding: 0 10px;
+                    }}
+                    .avg-level-box {{
+                        background-color: rgba(255, 255, 255, 0.3);
+                        border-radius: 10px;
+                        padding: 3px 6px;
+                        font-size: 10px;
+                        font-weight: bold;
+                        display: block; /* 블록 레벨 요소로 설정 */
+                        margin-bottom: 10px; /* 아래쪽 여백 */
+                    }}
+                    .player-line {{
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        margin-bottom: 5px; /* 플레이어 줄 간의 여백 */
+                    }}
+                    .player-name {{
+                        margin-right: 5px; /* 이름과 레벨 원 사이의 여백 */
+                    }}
+                    .level-circle {{
+                        display: inline-block;
+                        width: 20px;
+                        height: 20px;
+                        line-height: 20px;
+                        border-radius: 50%;
+                        background-color: #ffffff;
+                        color: #333;
+                        text-align: center;
+                        font-size: 10px;
+                    }}
+                    .vs-text {{
+                        color: #ffffff;
+                        font-size: 20px;
+                        font-weight: bold;
+                        margin: 0 20px;
+                    }}
+                </style>
+                <div class="match-box">
+                    <div class="match-number-box">Match {match_index}</div>
+                    <div class="team-vs-team">
+                        <div class="team-box">
+                            <div class="avg-level-box">Avg Level: {team1_avg_exp}</div>
+                        <div class="player-line">
+                            <span class="player-name">{team1_players[0][0]}</span>
+                            <span class="level-circle">{team1_players[0][1]}</span>
+                        </div>
+                        <div class="player-line">
+                            <span class="player-name">{team1_players[1][0]}</span>
+                            <span class="level-circle">{team1_players[1][1]}</span>
+                        </div>
+                    </div>
+                        <div class="vs-text">VS</div>
+                        <div class="team-box">
+                            <div class="avg-level-box">Avg Level: {team2_avg_exp}</div>
+                        <div class="player-line">
+                            <span class="player-name">{team2_players[0][0]}</span>
+                            <span class="level-circle">{team2_players[0][1]}</span>
+                        </div>
+                        <div class="player-line">
+                            <span class="player-name">{team2_players[1][0]}</span>
+                            <span class="level-circle">{team2_players[1][1]}</span>
+                        </div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            # 참가 횟수 요약 정보를 표시하는 박스 생성
+            st.markdown(f"""
+            <style>
+                .participation-container {{
+                    display: flex;
+                    flex-wrap: wrap;
+                    justify-content: center;  /* 가로축 기준으로 중앙 정렬 */
+                    gap: 15px;  /* 박스 간격 */
+                    padding: 10px;
+                    margin-bottom: 20px;
+                }}
+                .participation-title {{
+                    width: 100%;  /* 타이틀 너비 전체로 설정 */
+                    margin: 0;
+                    font-size: 18px;
+                    text-align: center;  /* 텍스트 중앙 정렬 */
+                    font-weight: bold;
+                    color: #d7ccc8; /* 타이틀 텍스트 색상 */
+                    border-bottom: 2px solid #d7ccc8; /* 타이틀 아래 경계선 */
+                    padding-bottom: 10px; /* 타이틀과 내용 사이의 여백 */
+                }}
+                .player-card {{
+                    background-color: #6d4c41; /* 카드 배경색 */
+                    color: #fff; /* 텍스트 색상 */
+                    border-radius: 10px; /* 카드 모서리 둥글기 */
+                    padding: 10px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.2); /* 그림자 효과 */
+                    text-align: center; /* 텍스트 중앙 정렬 */
+                    font-size: 14px; /* 폰트 크기 */
+                }}
+                .player-name {{
+                    font-weight: bold; /* 이름 강조 */
+                    margin-bottom: 5px; /* 이름과 참가 횟수 사이의 여백 */
+                }}
+            </style>
+            <div class="participation-summary">
+                <h4 class="participation-title">Participation Summary</h4>
+                <div class="participation-container">
+                    {" ".join([f'<div class="player-card"><div class="player-name">{player["name"]}</div><div>{game_counts[player["id"]]} 경기</div></div>' for player in all_players])}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+def page_player_setting():
+    st.markdown("""
+        <style>
+        .Equipment-header {
+            font-size: 24px;
+            font-weight: bold;
+            background: linear-gradient(to right, #f1c40f, #f39c12);
+            color: #FFFFFF;  # 텍스트 색상을 투명하게 설정하여 배경 그라데이션을 보이게 함
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        </style>
+        <div class="Equipment-header">Player Equipment</div>
+    """, unsafe_allow_html=True)
+    
     
     conn = create_connection('fsi_rank.db')  # 데이터베이스 연결
     players = get_players(conn)  # 참가자 정보 가져오기
@@ -1658,6 +1945,7 @@ def main():
     menu_items = {
         "랭킹": page_view_ranking,
         "전적": page_view_players,
+        "경기 생성" :page_generate_game,
         "경기 결과 추가": page_add_match,
         "경기 결과 삭제": page_remove_match,
         "대회 경기 추가": page_add_Competition,
