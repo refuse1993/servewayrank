@@ -136,13 +136,13 @@ def del_match(conn,matchid):
                 FROM Experience
                 WHERE MatchID = ?
             )
-        """, (matchid, matchid))
+        """, (match_id_int, match_id_int))
 
         # 해당 MatchID를 가진 Experience 테이블의 행을 삭제합니다.
-        cur.execute("DELETE FROM Experience WHERE MatchID = ?", (matchid,))
+        cur.execute("DELETE FROM Experience WHERE MatchID = ?", (match_id_int,))
 
         # Match 테이블에서 해당 MatchID를 가진 행을 삭제합니다.
-        cur.execute("DELETE FROM Match WHERE MatchID = ?", (matchid,))
+        cur.execute("DELETE FROM Match WHERE MatchID = ?", (match_id_int,))
 
         # 변경 사항을 커밋합니다.
         conn.commit()
@@ -1101,6 +1101,7 @@ def page_remove_match():
                     # 각 경기마다 고유한 키를 가진 삭제 버튼 생성
                     if st.button('삭제', key=f"delete-{matchid}"):
                         del_match(conn, matchid)
+                        st.success(f"{matchid}가 삭제되었습니다.")
             
                 # 현재 행의 날짜를 이전 날짜로 설정
                 previous_date = match_date
