@@ -952,19 +952,7 @@ def page_remove_match():
     
     if conn is not None:
         
-        with st.container():
-            # '복식', '단식', '전체' 중 하나를 선택할 수 있는 라디오 버튼 생성
-            match_option = st.radio(
-                "Matches Filter",
-                ('전체', '단식', '복식'),
-                horizontal=True
-            )
 
-            # 사용자 선택에 따라 변수 설정
-            show_doubles = match_option == '복식'
-            show_singles = match_option == '단식'
-            show_all = match_option == '전체'
-            
         matches = get_all_matches(conn)
         
         if matches:
@@ -981,10 +969,7 @@ def page_remove_match():
                     st.success(f"MatchID-{match_id}가 삭제되었습니다.")
                 else:
                     st.error("잘못된 패스워드입니다.")
-            # 복식 경기 데이터만 필터링
-            doubles_matches = df_matches[df_matches['복식 여부'] == True]
-            # 단식 경기 데이터만 필터링
-            singles_matches = df_matches[df_matches['복식 여부'] == False]
+                    
 
             # 승률 표시를 위한 스타일 설정
             # 스타일 설정
@@ -1079,18 +1064,11 @@ def page_remove_match():
                     }
                 </style>
             """, unsafe_allow_html=True)
-
-            if show_doubles:
-                filtered_matches = df_matches[df_matches['복식 여부'] == True]  # 복식 경기만 필터링
-            elif show_singles:
-                filtered_matches = df_matches[df_matches['복식 여부'] == False]  # 단식 경기만 필터링
-            else:  # show_all을 누르거나 아무것도 선택하지 않았을 때
-                filtered_matches = df_matches  # 전체 경기 결과
-                
+              
             previous_date = None
             
             # 각 경기별로 복식 여부를 확인하고, 해당하는 텍스트 형식으로 출력
-            for _, row in filtered_matches.iterrows():
+            for _, row in df_matches.iterrows():
                 matchid = row['MATCHID']
                 is_doubles = row['복식 여부']
                 match_date = row['날짜']
