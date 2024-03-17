@@ -155,7 +155,6 @@ def del_match(conn, matchid):
         # 데이터베이스 연결을 닫습니다.
         conn.close()
     
-
 # 사용자의 경기 기록을 조회하는 함수
 def get_equiphistory(conn):
     cur = conn.cursor()
