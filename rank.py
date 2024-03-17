@@ -85,7 +85,7 @@ def get_player_matches(conn, player_id):
     cur = conn.cursor()
     player_id_int = int(player_id)
     cur.execute("""
-        SELECT m.Date, m.IsDoubles, m.TeamAScore, m.TeamBScore, m.WinningTeam, 
+        SELECT m.matchid, m.Date, m.IsDoubles, m.TeamAScore, m.TeamBScore, m.WinningTeam, 
            p1.Name AS TeamAPlayer1, p2.Name AS TeamAPlayer2, p3.Name AS TeamBPlayer1, p4.Name AS TeamBPlayer2,
            CASE 
                WHEN m.WinningTeam = 'A' AND ? IN (m.TeamAPlayer1ID, m.TeamAPlayer2ID) THEN '승리'
@@ -121,6 +121,7 @@ def get_all_matches(conn):
 
 def del_match(conn,matchid):
     cur = conn.cursor()
+    match_id_int = int(matchid)
     try:
         # Experience 테이블에서 해당 MatchID를 가진 행을 찾아 이전 경험치로 Player 테이블을 업데이트합니다.
         cur.execute("""
@@ -517,7 +518,7 @@ def page_view_players():
                         f"{symbol}{abs(diff)}", color=color, va='center', ha='center', fontdict={'weight': 'bold', 'size': 8})
 
                 # 현재 경험치 값 표시 (크고 화려하게)
-                plt.text(df_exp_history.index[i] + 1, df_exp_history['경험치'].iloc[i] + 0.02 * max(df_exp_history['경험치']),
+                plt.text(df_exp_history.index[i] + 1, df_exp_history['경험치'].iloc[i] + 0.025 * max(df_exp_history['경험치']),
                         f"{df_exp_history['경험치'].iloc[i]}", color='blue', va='center', ha='center', fontdict={'weight': 'bold', 'size': 12})
 
             plt.xlabel('Game Count')
@@ -574,10 +575,10 @@ def page_view_players():
         
         if matches:
             # '날짜', '복식 여부', 'A팀 점수', 'B팀 점수', '승리 팀', 'A팀원1', 'A팀원2', 'B팀원1', 'B팀원2', '결과' 컬럼을 포함하여 DataFrame 생성
-            df_matches = pd.DataFrame(matches, columns=['날짜', '복식 여부', 'A팀 점수', 'B팀 점수', '승리 팀', 'A팀원1', 'A팀원2', 'B팀원1', 'B팀원2', '결과'])
+            df_matches = pd.DataFrame(matches, columns=['MATCHID','날짜', '복식 여부', 'A팀 점수', 'B팀 점수', '승리 팀', 'A팀원1', 'A팀원2', 'B팀원1', 'B팀원2', '결과'])
 
             # 경기 결과가 최신 순으로 정렬되도록 날짜 기준 내림차순 정렬
-            df_matches = df_matches.sort_values(by='날짜', ascending=False)
+            df_matches = df_matches.sort_values(by='MATCHID', ascending=False)
 
             # 복식 경기 데이터만 필터링
             doubles_matches = df_matches[df_matches['복식 여부'] == True]
@@ -1058,7 +1059,6 @@ def page_remove_match():
                 team_a_score = row['A팀 점수']
                 team_b_score = row['B팀 점수']
                 team_b_member1 = row['B팀원1']
-                result = '삭제'
 
                 # 복식 경기일 경우
                 if is_doubles:
@@ -1102,7 +1102,6 @@ def page_remove_match():
                     if st.button('삭제', key=f"delete-{matchid}"):
                         del_match(conn, matchid)
             
-                
                 # 현재 행의 날짜를 이전 날짜로 설정
                 previous_date = match_date
 
@@ -1299,10 +1298,10 @@ def page_view_ranking():
         
             if matches:
                 # '날짜', '복식 여부', 'A팀 점수', 'B팀 점수', '승리 팀', 'A팀원1', 'A팀원2', 'B팀원1', 'B팀원2', '결과' 컬럼을 포함하여 DataFrame 생성
-                df_matches = pd.DataFrame(matches, columns=['날짜', '복식 여부', 'A팀 점수', 'B팀 점수', '승리 팀', 'A팀원1', 'A팀원2', 'B팀원1', 'B팀원2', '결과'])
+                df_matches = pd.DataFrame(matches, columns=['MATCHID','날짜', '복식 여부', 'A팀 점수', 'B팀 점수', '승리 팀', 'A팀원1', 'A팀원2', 'B팀원1', 'B팀원2', '결과'])
 
                 # 경기 결과가 최신 순으로 정렬되도록 날짜 기준 내림차순 정렬
-                df_matches = df_matches.sort_values(by='날짜', ascending=False)
+                df_matches = df_matches.sort_values(by='MATCHID', ascending=False)
 
                 # 복식 경기 데이터만 필터링
                 doubles_matches = df_matches[df_matches['복식 여부'] == True]
