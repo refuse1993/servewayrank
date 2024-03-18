@@ -384,7 +384,7 @@ def calculate_tournament_scores(matches):
             for player in match['team_b']:
                 scores[player] = scores.get(player, 0) + (100 if match['winning_team'] == 'B' else 50)
     return scores
-
+# 밸런스 경기 생성 함수
 def generate_balanced_matches(players, games_per_player):
     # 플레이어의 경험치를 매핑합니다.
     player_experience = {player['id']: player['experience'] for player in players}
@@ -424,8 +424,8 @@ def generate_balanced_matches(players, games_per_player):
                     game_counts[player_id] += 1
 
     return matches
-
-def generate_toto(conn, match_details):
+# 토토 경기 생성
+def generate_toto_match(conn, match_details):
     # Insert the match details into the TOTO table
     cursor = conn.cursor()
     cursor.execute("""
@@ -433,7 +433,32 @@ def generate_toto(conn, match_details):
         VALUES (?, ?, ?, ?, ?, ?)
     """, match_details)
     conn.commit()
+# 배당률 계산 함수
+def calculate_odds(player_bets, total_winning_amount):
+    odds = {}
+    for player, bet_team, bet_amount in player_bets:
+        if bet_team in odds:
+            odds[bet_team] += bet_amount / total_winning_amount
+        else:
+            odds[bet_team] = bet_amount / total_winning_amount
+    return odds
+# 토토 배당률 표시 함수
+def display_odds(conn):
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT bet_team, SUM(bet_amount) AS total_bets
+        FROM Players_bets
+        GROUP BY bet_team
+    """)
+    betting_data = cursor.fetchall()
 
+    total_winning_amount = sum(bet[1] for bet in betting_data)
+
+    odds = calculate_odds(betting_data, total_winning_amount)
+
+    st.write("실시간 팀별 배당률:")
+    for team, odd in odds.items():
+        st.write(f"{team}: {odd * 100}%")
 def add_toto_betting_log(conn, player_bet_details, toto_id):
     # Calculate rewards for participants based on the match result
     # Retrieve all bets placed on this match from the database
@@ -985,7 +1010,7 @@ def page_toto_generator():
                             team_b[1] if match_info['is_doubles'] else None,  # TeamBPlayer2ID (복식인 경우)
                         )
                         # add_match 함수를 호출하여 경기 결과를 Matches 테이블에 저장
-                        # generate_toto(conn, match_details)
+                        # generate_toto_match(conn, match_details)
                     st.success("토토 경기가 생성되었습니다.")
                     
                 conn.close()
@@ -2087,7 +2112,7 @@ def main():
         "경기 생성" :page_generate_game,
         "경기 결과 추가": page_add_match,
         "경기 결과 삭제": page_remove_match,
-        "대회 경기 추가": page_add_Competition,
+        #"대회 경기 추가": page_add_Competition,
         "참가자 장비": page_player_setting,
         "참가자 등록": page_add_player,
         "설정": page_setting
