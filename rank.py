@@ -1117,7 +1117,7 @@ def page_remove_match():
             margin-bottom: 20px;
         }
         </style>
-        <div class="matchadd-header">Match Add</div>
+        <div class="matchadd-header">Match Remove</div>
     """, unsafe_allow_html=True)
     
     # 패스워드 입력
@@ -1312,6 +1312,18 @@ def page_add_Competition():
         </style>
         <div class="matchadd-header">Competition Add</div>
     """, unsafe_allow_html=True)
+    
+    st.markdown("""
+    <style>
+        .improving-text {
+            color: red; 
+            font-size: 40px; 
+            text-align: center; 
+            margin-top: 5px;
+        }
+    </style>
+    <div class="improving-text">개선중</div>
+    """, unsafe_allow_html=True)
         
     conn = create_connection('fsi_rank.db')
     
@@ -1379,17 +1391,6 @@ def page_add_Competition():
             }
             all_matches.append(match_info)
             
-    st.markdown("""
-    <style>
-        .improving-text {
-            color: red; 
-            font-size: 40px; 
-            text-align: center; 
-            margin-top: 100px;
-        }
-    </style>
-    <div class="improving-text">개선중</div>
-    """, unsafe_allow_html=True)
     
     show_button = False
     if show_button:        
