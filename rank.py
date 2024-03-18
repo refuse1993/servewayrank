@@ -424,7 +424,51 @@ def generate_balanced_matches(players, games_per_player):
                     game_counts[player_id] += 1
 
     return matches
+
+def generate_toto(conn, match_details):
+    # Insert the match details into the TOTO table
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO toto (date, is_doubles, team_a_player1_id, team_a_player2_id, team_b_player1_id, team_b_player2_id)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, match_details)
+    conn.commit()
+
+def add_toto_betting_log(conn, player_bet_details, toto_id):
+    # Calculate rewards for participants based on the match result
+    # Retrieve all bets placed on this match from the database
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO Players_bets (player_id, player_name, bet_team, bet_amount, toto_id)
+        VALUES (?, ?, ?, ?, ?)
+    """, player_bet_details[0], player_bet_details[1],player_bet_details[2],player_bet_details[3],toto_id)
+    conn.commit()
+
+ # 토토 보상 생성 함수
+def generate_rewards(conn, toto_id, actual_result):
     
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT player_id, player_name, bet_team, bet_amount
+        FROM bets
+        WHERE toto_id = (SELECT MAX(id) FROM toto)
+    """)
+    
+    player_bets = cursor.fetchall()
+    
+    rewards = {}
+    total_winning_amount = 0  # Total betting amount on the winning team
+    for _,_, bet_team, bet_amount in player_bets:
+        if bet_team == actual_result:
+            total_winning_amount += bet_amount
+    for player_id,_, bet_team, bet_amount in player_bets:
+        if bet_team == actual_result:
+            ratio = bet_amount / total_winning_amount
+            rewards[player_id] = round(ratio * sum(bet[2] for bet in player_bets), 2)
+        else:
+            rewards[player_id] = 0
+    return rewards
+
 # 사용자 등록 페이지
 def page_add_player():
     
@@ -853,6 +897,99 @@ def page_view_players():
     else:
         st.error("데이터베이스에서 참가자 목록을 가져오는 데 실패했습니다.")
 
+def page_toto_generator():
+    st.markdown("""
+        <style>
+        .betting-header {
+            font-size: 24px;
+            font-weight: bold;
+            background: linear-gradient(to right, #00b894, #00cec9);  # 녹색 그라데이션
+            -webkit-background-clip: text;
+            color: #FFFFFF;  # 텍스트 색상을 투명하게 설정하여 배경 그라데이션을 보이게 함
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        </style>
+        <div class="betting-header">BETTING</div>
+    """, unsafe_allow_html=True)
+    
+    conn = create_connection('fsi_rank.db')
+    
+    if conn is not None:
+        players = get_players(conn)  # 참가자 정보 가져오기
+        player_options = {name: player_id for player_id, name, _, _ in players}  # 참가자 이름과 ID를 매핑하는 딕셔너리 생성
+        
+        # Expander로 경기 입력 및 공통 정보 입력 부분을 감싸기
+        with st.expander("TOTO Match Generator"):
+            # 경기 입력 및 공통 정보 입력
+            date = st.date_input("경기 날짜")
+            is_doubles = st.checkbox("복식 여부")
+
+            # 각 경기의 세부 정보를 저장할 리스트
+            all_matches = []
+
+            # 각 경기에 대한 입력
+            
+            st.markdown(f"""
+                <div style='text-align: center; color: #2c3e50; font-size: 20px; font-weight: 600; margin: 10px 0; padding: 10px; background-color: #ecf0f1; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);'>
+                    TOTO Match
+                </div>
+                """, unsafe_allow_html=True)
+            col1, col2, col_vs, col3, col4 = st.columns([3, 2, 1, 2, 3])
+
+            with col1:
+                team_a_player1_name = st.selectbox("Team A 1", list(player_options.keys()), key=f"team_a_p1", index=0)
+                team_a_player1_id = player_options[team_a_player1_name]
+                if is_doubles:
+                    team_a_player2_name = st.selectbox("Team A 2", list(player_options.keys()), key=f"team_a_p2", index=1)
+                    team_a_player2_id = player_options[team_a_player2_name]
+            with col_vs:
+                st.markdown(f"""
+                <div style='text-align: center; font-size: 24px; font-weight: bold; color: #34495e;'>
+                    vs
+                </div>
+                """, unsafe_allow_html=True)
+            with col4:
+                team_b_player1_name = st.selectbox("Team B 1", list(player_options.keys()), key=f"team_b_p1", index=2)
+                team_b_player1_id = player_options[team_b_player1_name]
+                if is_doubles:
+                    team_b_player2_name = st.selectbox("Team B 2", list(player_options.keys()), key=f"team_b_p2", index=3)
+                    team_b_player2_id = player_options[team_b_player2_name]
+
+            # 입력받은 경기 정보 저장
+            match_info = {
+                "date": date,
+                "is_tournament": 0,
+                "is_doubles": is_doubles,
+                "team_a": [team_a_player1_id] + ([team_a_player2_id] if is_doubles else []),
+                "team_b": [team_b_player1_id] + ([team_b_player2_id] if is_doubles else [])
+            }
+            all_matches.append(match_info)
+
+            # 모든 경기 정보 입력 후 결과 저장 버튼
+            if st.button("모든 경기 결과 저장"):
+                conn = create_connection('fsi_rank.db')
+                if conn is not None:
+                    for match_info in all_matches:
+                        # 각 경기 정보에 따라 경기 결과 및 경험치 변경을 처리
+                        team_a = match_info['team_a']
+                        team_b = match_info['team_b']
+                        match_details = (
+                            match_info['date'],
+                            match_info['is_doubles'],
+                            team_a[0],  # TeamAPlayer1ID
+                            team_a[1] if match_info['is_doubles'] else None,  # TeamAPlayer2ID (복식인 경우)
+                            team_b[0],  # TeamBPlayer1ID
+                            team_b[1] if match_info['is_doubles'] else None,  # TeamBPlayer2ID (복식인 경우)
+                        )
+                        # add_match 함수를 호출하여 경기 결과를 Matches 테이블에 저장
+                        # generate_toto(conn, match_details)
+                    st.success("토토 경기가 생성되었습니다.")
+                    
+                conn.close()
+    
 # 경기 결과 추가 페이지
 def page_add_match():
     st.markdown("""
@@ -1945,6 +2082,7 @@ def main():
     menu_items = {
         "랭킹": page_view_ranking,
         "전적": page_view_players,
+        "토토": page_toto_generator,
         "경기 생성" :page_generate_game,
         "경기 결과 추가": page_add_match,
         "경기 결과 삭제": page_remove_match,
