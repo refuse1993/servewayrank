@@ -574,7 +574,7 @@ def page_add_player():
     if conn is not None:
         st.markdown(f"""
             <div style='text-align: center; color: #2c3e50; font-size: 20px; font-weight: 600; margin: 10px 0; padding: 10px; background-color: #ecf0f1; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);'>
-                기존 참가자 칭호 변경
+                칭호 변경
             </div>
         """, unsafe_allow_html=True)
         players = get_players(conn)
@@ -597,7 +597,7 @@ def page_add_player():
         
         st.markdown(f"""
             <div style='text-align: center; color: #2c3e50; font-size: 20px; font-weight: 600; margin: 10px 0; padding: 10px; background-color: #ecf0f1; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);'>
-                기존 참가자 패스워드 변경
+                패스워드 변경
             </div>
         """, unsafe_allow_html=True)
         players_p = get_players_password(conn)
