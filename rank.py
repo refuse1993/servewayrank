@@ -2099,6 +2099,73 @@ def page_setting():
         else:
             st.error("잘못된 패스워드입니다.")
 
+def page_explain():
+    st.markdown("""
+        <style>
+        .Explain-header {
+            font-size: 24px;
+            font-weight: bold;
+            background: linear-gradient(to right, #f1c40f, #f39c12);
+            color: #FFFFFF;  # 텍스트 색상을 투명하게 설정하여 배경 그라데이션을 보이게 함
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        </style>
+        <div class="Explain-header">Explain</div>
+    """, unsafe_allow_html=True)
+    
+    # Streamlit 페이지 시작 부분에 CSS 정의
+    st.markdown("""
+        <style>
+            .tier-info {
+                display: flex;
+                align-items: center;
+                margin-bottom: 20px;
+            }
+            .tier-image {
+                width: 60px;
+                height: 60px;
+                object-fit: contain;
+                border-radius: 50%;
+                margin-right: 10px;
+            }
+            .tier-description {
+                font-size: 16px;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+
+    # 설명창에 표시할 티어 이미지와 설명
+    tiers = {
+        '0': 'Doge Tier',
+        '1': 'Iron Tier',
+        '2': 'Bronze Tier',
+        '3': 'Silver Tier',
+        '4': 'Gold Tier',
+        '5': 'Platinum Tier',
+        '6': 'Diamond Tier',
+        '7': 'Master Tier',
+        '8': 'Grand Master Tier',
+        '9': 'Challenger Tier',
+        # 나머지 티어 정보 추가
+    }
+
+    # 설명창 내용 생성
+    for tier, description in tiers.items():
+        tier_image_path = f'icon/{tier}.png'  # 실제 이미지 경로로 변경 필요
+        tier_image_base64 = get_image_base64(tier_image_path)  # 이미지를 Base64로 인코딩하는 함수 필요
+
+        st.markdown(f"""
+            <div class="tier-info">
+                <img src="data:image/png;base64,{tier_image_base64}" class="tier-image">
+                <div class="tier-description">{description}</div>
+            </div>
+        """, unsafe_allow_html=True)
+    
+    
+
 def main_page():
     st.markdown("""
         <style>
@@ -2181,6 +2248,7 @@ def main():
         #"대회 경기 추가": page_add_Competition,
         "참가자 장비": page_player_setting,
         "참가자 정보 수정": page_add_player,
+        "LHㄷH.GG?":page_explain,
         "설정": page_setting
     }
     
