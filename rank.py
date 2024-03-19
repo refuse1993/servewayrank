@@ -230,6 +230,9 @@ def del_match(conn, matchid):
 
         # Match 테이블에서 해당 MatchID를 가진 행을 삭제합니다.
         cur.execute("DELETE FROM Matches WHERE MatchID = ?", (match_id_int,))
+        
+        # toto_bets 테이블에서 해당 MatchID를 가진 행을 삭제합니다.
+        cur.execute("DELETE FROM toto_bets WHERE match_id = ?", (match_id_int,))
 
         # 변경 사항을 커밋합니다.
         conn.commit()
@@ -485,77 +488,175 @@ def generate_balanced_matches(players, games_per_player):
                     game_counts[player_id] += 1
 
     return matches
-# 토토 경기 생성
-def generate_toto_match(conn, match_details):
-    # Insert the match details into the TOTO table
+
+def get_upcoming_toto_matches(conn):
     cursor = conn.cursor()
     cursor.execute("""
-        INSERT INTO toto (date, is_doubles, team_a_player1_id, team_a_player2_id, team_b_player1_id, team_b_player2_id)
-        VALUES (?, ?, ?, ?, ?, ?)
+        SELECT m.MatchID, m.Date, m.TeamAPlayer1ID, m.TeamAPlayer2ID, m.TeamBPlayer1ID, m.TeamBPlayer2ID,
+               CASE WHEN SUM(tb.active) > 0 THEN 1 ELSE 0 END AS active
+        FROM matches m
+        LEFT JOIN toto_bets tb ON m.MatchID = tb.match_id
+        WHERE m.IsTournament = 1
+        GROUP BY m.MatchID, m.Date, m.TeamAPlayer1ID, m.TeamAPlayer2ID, m.TeamBPlayer1ID, m.TeamBPlayer2ID
+    """)
+    return cursor.fetchall()
+
+def add_toto_match(conn, match_details):
+    cursor = conn.cursor()
+    
+    # Insert the match details into the TOTO table
+    cursor.execute("""
+        INSERT INTO matches (date, IsTournament, IsDoubles, TeamAPlayer1ID, TeamAPlayer2ID, TeamBPlayer1ID, TeamBPlayer2ID)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
     """, match_details)
     conn.commit()
+    
+    # 팀 A와 팀 B에 기본 배당금 추가
+    match_id = cursor.lastrowid  # 새로 추가된 경기의 ID를 가져옴
+    default_bet_amount = 50  # 기본 배당금 설정
+    cursor.execute("""
+        INSERT INTO toto_bets (match_id, bet_team, player_id, bet_amount, active)
+        VALUES (?, ?, ?, ?, ?)
+    """, (match_id, 'A', 0, default_bet_amount, 1))  # 팀 A에 배당금 추가
+    cursor.execute("""
+        INSERT INTO toto_bets (match_id, bet_team, player_id, bet_amount, active)
+        VALUES (?, ?, ?, ?, ?)
+    """, (match_id, 'B', 0, default_bet_amount, 1))  # 팀 B에 배당금 추가
+    conn.commit()
+
 # 배당률 계산 함수
-def calculate_odds(player_bets, total_winning_amount):
+def calculate_odds(bet_data, total_winning_amount):
     odds = {}
-    for player, bet_team, bet_amount in player_bets:
-        if bet_team in odds:
-            odds[bet_team] += bet_amount / total_winning_amount
-        else:
-            odds[bet_team] = bet_amount / total_winning_amount
+    for bet_team, total_bets in bet_data:
+        odds[bet_team] = total_winning_amount / total_bets if total_bets else 0
     return odds
+
 # 토토 배당률 표시 함수
-def display_odds(conn):
+def display_match_with_odds(conn, match_id):
     cursor = conn.cursor()
     cursor.execute("""
         SELECT bet_team, SUM(bet_amount) AS total_bets
-        FROM Players_bets
+        FROM toto_bets
+        WHERE match_id = ?
         GROUP BY bet_team
-    """)
+    """, (match_id,))
     betting_data = cursor.fetchall()
 
-    total_winning_amount = sum(bet[1] for bet in betting_data)
+    total_betting_amount = sum(bet[1] for bet in betting_data)
+    odds = calculate_odds(betting_data, total_betting_amount)
 
-    odds = calculate_odds(betting_data, total_winning_amount)
+    odds_display = ", ".join([f"Team {team}: {odd:.2f} 배당" for team, odd in odds.items()])
+    total_betting_display = f"전체 배팅 금액: {total_betting_amount}"
 
-    st.write("실시간 팀별 배당률:")
-    for team, odd in odds.items():
-        st.write(f"{team}: {odd * 100}%")
+    return odds_display, total_betting_display
+        
 # 토토 배팅 기록
-def add_toto_betting_log(conn, player_bet_details, toto_id):
-    # Calculate rewards for participants based on the match result
-    # Retrieve all bets placed on this match from the database
+def add_toto_betting_log(conn, bet_details):
     cursor = conn.cursor()
     cursor.execute("""
-        INSERT INTO Players_bets (player_id, player_name, bet_team, bet_amount, toto_id)
-        VALUES (?, ?, ?, ?, ?)
-    """, player_bet_details[0], player_bet_details[1],player_bet_details[2],player_bet_details[3],toto_id)
+        INSERT INTO toto_bets (match_id, bet_team, player_id, bet_amount)
+        VALUES (?, ?, ?, ?)
+    """, bet_details)
     conn.commit()
 
- # 토토 보상 생성 함수
-# 토토 배팅 보상
-def generate_rewards(conn, toto_id, actual_result):
+# 토토 보상 생성 함수
+def generate_rewards(conn, toto_id, team_a_score=None, team_b_score=None):
+    cursor = conn.cursor()
+    match_id = int(toto_id)
     
+    if team_a_score is None:
+        team_a_score = 0
+    # team_b_score가 명시적으로 전달되지 않았을 때 기본값으로 0을 사용
+    if team_b_score is None:
+        team_b_score = 0
+
+    if team_a_score > team_b_score:
+        winning_team = 'A'
+    elif team_a_score < team_b_score:
+        winning_team = 'B'
+    else:
+        # 점수가 같을 경우에 대한 처리
+        winning_team = None
+        
+    cursor.execute("""
+        UPDATE Matches
+        SET TeamAScore = ?, TeamBScore = ?, WinningTeam = ?
+        WHERE MatchID = ?
+    """, (team_a_score, team_b_score, winning_team, match_id))
+    
+    # bets 대신 toto_bets 테이블을 조회해야 합니다. 또한 player_name 컬럼은 toto_bets 테이블에 없으므로 제거합니다.
+    cursor.execute("""
+        SELECT player_id, bet_team, bet_amount
+        FROM toto_bets
+        WHERE match_id = ? AND active = 1
+    """, (match_id,))
+    player_bets = cursor.fetchall()
+
+    rewards = {}
+    total_betting_amount = sum(bet_amount for _, _, bet_amount in player_bets)  # 모든 팀에 걸린 포인트의 합
+    print('total_betting_amount',total_betting_amount)
+    # 배당금 지급 전 후의 경험치를 계산하고 변경사항을 기록합니다.
+    for player_id, bet_team, bet_amount in player_bets:
+        if player_id == 0:
+            cursor.execute("""
+                UPDATE toto_bets
+                SET reward = ?, active = 0
+                WHERE match_id = ? AND player_id = ?
+            """, (0, match_id, player_id))
+            continue 
+        
+        cursor.execute("SELECT Experience FROM Players WHERE PlayerID = ?", (player_id,))
+        prev_experience = cursor.fetchone()[0]
+        print(bet_team,'==',winning_team)
+        if bet_team == winning_team:
+            ratio = bet_amount / total_betting_amount if total_betting_amount > 0 else 0
+            reward = round(ratio * sum(bet[2] for bet in player_bets), 2)
+            post_experience = prev_experience + reward
+        else:
+            reward = 0
+            post_experience = prev_experience
+
+        print('reward :',reward)
+        rewards[player_id] = reward
+
+        # ExperienceHistory 업데이트
+        cursor.execute("""
+            INSERT INTO ExperienceHistory (MatchID, PlayerID, Date, PreviousExperience, PostExperience)
+            VALUES (?, ?, CURRENT_DATE, ?, ?)
+        """, (match_id, player_id, prev_experience, post_experience))
+
+        # Players 테이블의 경험치 업데이트
+        cursor.execute("UPDATE Players SET Experience = ? WHERE PlayerID = ?", (post_experience, player_id))
+
+        # toto_bets 테이블의 reward 업데이트 및 active 상태 변경
+        cursor.execute("""
+            UPDATE toto_bets
+            SET reward = ?, active = 0
+            WHERE match_id = ? AND player_id = ?
+        """, (reward, match_id, player_id))
+        
+    conn.commit()
+
+def display_completed_toto_rewards(conn, match_id):
+    cursor = conn.cursor()
+    # 해당 match_id의 모든 배팅을 조회하되, 경기가 종료되었고 reward가 0보다 큰 배팅만 필터링합니다.
+    cursor.execute("""
+        SELECT player_id, reward
+        FROM toto_bets
+        WHERE match_id = ? AND active = 0 AND reward > 0
+    """, (match_id,))
+    rewards = cursor.fetchall()
+    return rewards
+
+def has_bet_placed(conn, match_id, player_id):
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT player_id, player_name, bet_team, bet_amount
-        FROM bets
-        WHERE toto_id = (SELECT MAX(id) FROM toto)
-    """)
-    
-    player_bets = cursor.fetchall()
-    
-    rewards = {}
-    total_winning_amount = 0  # Total betting amount on the winning team
-    for _,_, bet_team, bet_amount in player_bets:
-        if bet_team == actual_result:
-            total_winning_amount += bet_amount
-    for player_id,_, bet_team, bet_amount in player_bets:
-        if bet_team == actual_result:
-            ratio = bet_amount / total_winning_amount
-            rewards[player_id] = round(ratio * sum(bet[2] for bet in player_bets), 2)
-        else:
-            rewards[player_id] = 0
-    return rewards
+        SELECT EXISTS(
+            SELECT 1 FROM toto_bets WHERE match_id = ? AND player_id = ?
+        )
+    """, (match_id, player_id))
+    return cursor.fetchone()[0] == 1
+
 # 사용자 등록 페이지
 def page_add_player():
     
@@ -705,10 +806,10 @@ def page_view_players():
                 <div class="player-title">{selected_title}</div>""", unsafe_allow_html=True)
         
         st.markdown(f"""
-            <div style="background-color: #f8d7da;
-                        color: #721c24;
+            <div style="background-color: #333333;
+                        color: #ffffff;
                         padding: 5px;
-                        border: 1px solid #f5c6cb;
+                        border: 1px solid #444444;
                         border-radius: 5px;
                         font-size: 18px;
                         text-align: center;
@@ -716,6 +817,7 @@ def page_view_players():
                 <strong>{selected_exp} point</strong>
             </div>
         """, unsafe_allow_html=True)
+        
         
         # 스타일을 기본값으로 설정
         plt.style.use('default')
@@ -1072,7 +1174,7 @@ def page_toto_generator():
             # 입력받은 경기 정보 저장
             match_info = {
                 "date": date,
-                "is_tournament": 0,
+                "is_toto": 1,
                 "is_doubles": is_doubles,
                 "team_a": [team_a_player1_id] + ([team_a_player2_id] if is_doubles else []),
                 "team_b": [team_b_player1_id] + ([team_b_player2_id] if is_doubles else [])
@@ -1089,6 +1191,7 @@ def page_toto_generator():
                         team_b = match_info['team_b']
                         match_details = (
                             match_info['date'],
+                            match_info['is_toto'],
                             match_info['is_doubles'],
                             team_a[0],  # TeamAPlayer1ID
                             team_a[1] if match_info['is_doubles'] else None,  # TeamAPlayer2ID (복식인 경우)
@@ -1096,10 +1199,122 @@ def page_toto_generator():
                             team_b[1] if match_info['is_doubles'] else None,  # TeamBPlayer2ID (복식인 경우)
                         )
                         # add_match 함수를 호출하여 경기 결과를 Matches 테이블에 저장
-                        # generate_toto_match(conn, match_details)
+                        add_toto_match(conn, match_details)
                     st.success("토토 경기가 생성되었습니다.")
+                     
+        matches = get_upcoming_toto_matches(conn)
+        
+        players = get_players(conn)
+        p_pass = get_players_password(conn)
+        player_options = {name: player_id for player_id, name, _, _ in players}
+        p_pass_options = {player_id: password for player_id, _, password in p_pass}
+        player_id_to_name = {player_id: name for player_id, name, _, _ in players}
+        active_match_ids = []  # 빈 리스트로 초기화
+
+        for match in matches:
+            match_id, date, team_a_p1, team_a_p2, team_b_p1, team_b_p2, active = match
+            odds_display, total_betting_display = display_match_with_odds(conn, match_id)
+            active_match_ids = [match[0] for match in matches if match[-1]]
+            
+            # 플레이어 ID를 이름으로 변환
+            team_a_p1_name = player_id_to_name.get(team_a_p1, "Unknown Player")
+            team_a_p2_name = player_id_to_name.get(team_a_p2, "") if team_a_p2 else ""
+            team_b_p1_name = player_id_to_name.get(team_b_p1, "Unknown Player")
+            team_b_p2_name = player_id_to_name.get(team_b_p2, "") if team_b_p2 else ""
+
+            # 배경색 설정
+            background_color = "#00b894" if active else "#34495e"  # 활성화 상태면 녹색, 비활성화면 다크한 색
+            
+            # 토토 상태에 따라 표시할 문구 결정
+            toto_status = "토토중" if active else "토토종료"
+            
+            # 토토 활성 여부에 따라 박스 스타일 설정
+            toto_status_box_style = f"""
+                padding: 5px;
+                background-color: {'#2ecc71' if active else '#e74c3c'}; /* 녹색: 활성, 빨강: 비활성 */
+                color: white;
+                border-radius: 5px;
+                margin-bottom: 10px;
+                width: fit-content;
+            """
+
+            # Streamlit 마크다운을 사용하여 경기 정보와 배팅 양식을 표시합니다.
+            st.markdown(f"""
+                <div style="margin: 10px 0;">
+                    <div style="{toto_status_box_style}">{'토토중' if active else '토토종료'}</div>
+                    <div style="padding: 15px; background: {background_color}; border-radius: 10px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
+                        <div style="color: #2c3e50; font-weight: 600; margin-bottom: 5px;">Match {match_id}</div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <div style="color: #2c3e50;">{date}</div>
+                            <div style="color: #2c3e50;">{toto_status}</div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <div style="color: #2c3e50;">Team A: {team_a_p1_name} {f'& {team_a_p2_name}' if team_a_p2_name else ''}</div>
+                            <div style="color: #2c3e50;">vs</div>
+                            <div style="color: #2c3e50;">Team B: {team_b_p1_name} {f'& {team_b_p2_name}' if team_b_p2_name else ''}</div>
+                        </div>
+                        <div style="color: #2c3e50; font-weight: 500; margin-top: 5px;">{odds_display}</div>
+                        <div style="color: #2c3e50; font-weight: 500; margin-top: 5px;">{total_betting_display}</div>
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
+
+            # 경기에 참여하지 않은 플레이어 목록을 필터링합니다.
+            non_participating_players = {name: player_id for name, player_id in player_options.items() if player_id not in [team_a_p1, team_a_p2, team_b_p1, team_b_p2]}
+            if active:  # 활성화 상태인 경우, 배팅 양식을 표시
+                with st.expander(f"베팅하기 (경기 {match_id})", expanded=False):
+                    with st.form(f"betting_form_{match_id}"):
+                        selected_player = st.selectbox("참가자 선택", options=list(non_participating_players.keys()), key=f"player_{match_id}")
+                        selected_team = st.radio("예측 승리팀", ('Team A', 'Team B'), key=f"team_{match_id}")
+                        betting_points = st.number_input("베팅 포인트", min_value=100, step=100, key=f"points_{match_id}")
+                        password_input = st.text_input("패스워드", type="password", key=f"password_{match_id}")
+
+                        submitted = st.form_submit_button("베팅 제출")
+                        if submitted:
+                            player_id = non_participating_players[selected_player]
+
+                            # 해당 경기에 대해 이미 배팅이 이루어진 경우 검증
+                            if has_bet_placed(conn, match_id, player_id):
+                                st.error("이미 이 경기에 대한 배팅을 하셨습니다.")
+                            elif password_input and p_pass_options.get(player_id) == password_input:
+                                bet_team = 'A' if selected_team == 'Team A' else 'B'
+                                add_toto_betting_log(conn, (match_id, bet_team, player_id, betting_points))
+                                st.success(f"{selected_player}님이 {betting_points} 포인트로 {selected_team}에 베팅하셨습니다.")
+                                st.experimental_rerun()
+                            else:
+                                st.error("패스워드가 올바르지 않습니다.")
+            else:  # 비활성화 상태인 경우, 배당 내역을 표시
+                match_rewards = display_completed_toto_rewards(conn, match_id)
+                if match_rewards:
+                    st.write(f"경기 {match_id}에 대한 배당 내역:")
+                    for player_id, reward in match_rewards:
+                        # 플레이어 ID를 이름으로 변환합니다.
+                        player_name = player_id_to_name.get(player_id, "Unknown Player")
+                        st.write(f"{player_name}: {reward} 포인트 배당금")
+                else:
+                    st.write(f"경기 {match_id}에 대한 지급된 배당금이 없습니다.")
                     
-                conn.close()
+        correct_password = "1626"
+
+        with st.expander(f"토토 끝내기", expanded=False):
+            with st.form("complete_match_form"):
+                match_id = st.selectbox("활성화된 매치 선택", active_match_ids)
+                team_a_score = st.number_input("Team A 점수", min_value=0, step=1, format="%d")
+                team_b_score = st.number_input("Team B 점수", min_value=0, step=1, format="%d")
+                admin_password = st.text_input("관리자 패스워드", type="password")
+
+                submitted = st.form_submit_button("매치 완료 처리")
+                if submitted:
+                    if admin_password == correct_password:  # 하드코딩된 패스워드와 일치하는지 확인
+                        generate_rewards(conn, match_id, team_a_score, team_b_score)
+                        st.success("매치 완료 처리되었습니다.")
+                        st.experimental_rerun()
+                    else:
+                        st.error("잘못된 관리자 패스워드입니다. 다시 시도하세요.")
+
+                
+        conn.close()
+          
 # 경기 결과 추가 페이지
 def page_add_match():
     st.markdown("""
@@ -1137,53 +1352,45 @@ def page_add_match():
 
         # 각 경기에 대한 입력
         for i in range(num_matches):
-            st.markdown(f"""
-            <div style='text-align: center; color: #2c3e50; font-size: 20px; font-weight: 600; margin: 10px 0; padding: 10px; background-color: #ecf0f1; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);'>
-                Match {i + 1}
-            </div>
-            """, unsafe_allow_html=True)
-            col1, col2, col_vs, col3, col4 = st.columns([3, 2, 1, 2, 3])
+            with st.expander(f"Match {i + 1}", expanded=True):  # 각 경기에 대한 Expander 추가, 기본적으로 펼친 상태로 설정
+              
+                col1, col2, col_vs, col3, col4 = st.columns([3, 2, 1, 2, 3])
 
-            with col1:
-                team_a_player1_name = st.selectbox("Team A 1", list(player_options.keys()), key=f"team_a_p1_{i}", index=0)
-                team_a_player1_id = player_options[team_a_player1_name]
-                if is_doubles:
-                    team_a_player2_name = st.selectbox("Team A 2", list(player_options.keys()), key=f"team_a_p2_{i}", index=1)
-                    team_a_player2_id = player_options[team_a_player2_name]
+                with col1:
+                    team_a_player1_name = st.selectbox("Team A Player 1", list(player_options.keys()), key=f"team_a_p1_{i}")
+                    team_a_player1_id = player_options[team_a_player1_name]
+                    if is_doubles:
+                        team_a_player2_name = st.selectbox("Team A Player 2", list(player_options.keys()), key=f"team_a_p2_{i}")
+                        team_a_player2_id = player_options[team_a_player2_name]
 
-            with col2:
-                team_a_score = st.number_input("Team A Score", min_value=0, value=0, key=f"team_a_score_{i}")
+                with col2:
+                    team_a_score = st.number_input("Team A Score", min_value=0, value=0, key=f"team_a_score_{i}")
 
-            with col_vs:
-                st.markdown(f"""
-                <div style='text-align: center; font-size: 24px; font-weight: bold; color: #34495e;'>
-                    vs
-                </div>
-                """, unsafe_allow_html=True)
+                with col_vs:
+                    st.markdown("<div style='text-align: center; font-size: 24px; font-weight: bold; color: #34495e;'>vs</div>", unsafe_allow_html=True)
 
-            with col3:
-                team_b_score = st.number_input("Team B Score", min_value=0, value=0, key=f"team_b_score_{i}")
+                with col3:
+                    team_b_score = st.number_input("Team B Score", min_value=0, value=0, key=f"team_b_score_{i}")
 
-            with col4:
-                team_b_player1_name = st.selectbox("Team B 1", list(player_options.keys()), key=f"team_b_p1_{i}", index=2)
-                team_b_player1_id = player_options[team_b_player1_name]
-                if is_doubles:
-                    team_b_player2_name = st.selectbox("Team B 2", list(player_options.keys()), key=f"team_b_p2_{i}", index=3)
-                    team_b_player2_id = player_options[team_b_player2_name]
-                    
-            # 입력받은 경기 정보 저장
-            match_info = {
-                "date": date,
-                "is_tournament": 0,
-                "is_doubles": is_doubles,
-                "team_a": [team_a_player1_id] + ([team_a_player2_id] if is_doubles else []),
-                "team_b": [team_b_player1_id] + ([team_b_player2_id] if is_doubles else []),
-                "team_a_score": team_a_score,
-                "team_b_score": team_b_score,
-                "winning_team": 'A' if team_a_score > team_b_score else 'B'
-            }
-            all_matches.append(match_info)
-
+                with col4:
+                    team_b_player1_name = st.selectbox("Team B Player 1", list(player_options.keys()), key=f"team_b_p1_{i}")
+                    team_b_player1_id = player_options[team_b_player1_name]
+                    if is_doubles:
+                        team_b_player2_name = st.selectbox("Team B Player 2", list(player_options.keys()), key=f"team_b_p2_{i}")
+                        team_b_player2_id = player_options[team_b_player2_name]
+                        
+                # 입력받은 경기 정보 저장
+                match_info = {
+                    "date": date,
+                    "is_tournament": 0,
+                    "is_doubles": is_doubles,
+                    "team_a": [team_a_player1_id] + ([team_a_player2_id] if is_doubles else []),
+                    "team_b": [team_b_player1_id] + ([team_b_player2_id] if is_doubles else []),
+                    "team_a_score": team_a_score,
+                    "team_b_score": team_b_score,
+                    "winning_team": 'A' if team_a_score > team_b_score else 'B'
+                }
+                all_matches.append(match_info)
     
     # 모든 경기 정보 입력 후 결과 저장 버튼
     if st.button("모든 경기 결과 저장"):
@@ -1588,129 +1795,123 @@ def page_view_ranking():
             total_win_rate = 0
             total_wins = 0
             total_matches = 0
-             
+            
             matches = get_player_matches(conn, player_id)
         
             if matches:
-                # '날짜', '복식 여부', 'A팀 점수', 'B팀 점수', '승리 팀', 'A팀원1', 'A팀원2', 'B팀원1', 'B팀원2', '결과' 컬럼을 포함하여 DataFrame 생성
                 df_matches = pd.DataFrame(matches, columns=['MATCHID','날짜', '복식 여부', 'A팀 점수', 'B팀 점수', '승리 팀', 'A팀원1', 'A팀원2', 'B팀원1', 'B팀원2', '결과'])
-
-                # 경기 결과가 최신 순으로 정렬되도록 날짜 기준 내림차순 정렬
                 df_matches = df_matches.sort_values(by='MATCHID', ascending=False)
 
-                # 복식 경기 데이터만 필터링
-                doubles_matches = df_matches[df_matches['복식 여부'] == True]
-                # 단식 경기 데이터만 필터링
-                singles_matches = df_matches[df_matches['복식 여부'] == False]
+                if len(df_matches) > 0:  # 이 부분을 추가하여 경기 기록이 있는 선수들만 처리
+                    doubles_matches = df_matches[df_matches['복식 여부'] == True]
+                    singles_matches = df_matches[df_matches['복식 여부'] == False]
 
-                # 복식 승리 횟수 계산
-                doubles_wins = doubles_matches[doubles_matches['결과'] == '승리'].shape[0]
-                # 단식 승리 횟수 계산
-                singles_wins = singles_matches[singles_matches['결과'] == '승리'].shape[0]
+                    doubles_wins = doubles_matches[doubles_matches['결과'] == '승리'].shape[0]
+                    singles_wins = singles_matches[singles_matches['결과'] == '승리'].shape[0]
 
-                # 전체 승리 횟수 (복식 + 단식)
-                total_wins = doubles_wins + singles_wins
-                total_matches = len(df_matches) if len(df_matches) > 0 else 0
-                # 승률 계산 (승리 횟수 / 전체 경기 횟수)
-                total_win_rate = total_wins / len(df_matches) if len(df_matches) > 0 else 0
+                    total_wins = doubles_wins + singles_wins
+                    total_matches = len(df_matches)
+                    total_win_rate = total_wins / total_matches
+
+                    win_rate_color = "#A8CAE1" if total_win_rate >= 0.5 else "#CF2E11"
         
 
-            # 승률에 따른 색상 조정
-            win_rate_color = "#A8CAE1" if total_win_rate >= 0.5 else "#CF2E11"
+                    # 승률에 따른 색상 조정
+                    win_rate_color = "#A8CAE1" if total_win_rate >= 0.5 else "#CF2E11"
 
-            
-            # 페이지 스타일 설정 (각 랭킹마다 다른 배경색 적용)
-            st.markdown(f"""
-                <style>
-                    .win-rate {{
-                        font-size: 14px; /* 승률 글자 크기 */
-                        font-weight: bold; /* 글꼴 굵기 */
-                        margin-right: 5px; /* 우측 마진 */
-                    }}
-                    .win-loss-stats {{
-                        font-size: 13px; /* 승패 글자 크기 조정 */
-                        color: #ffffff; /* 글자 색상 */
-                        font-weight: bold; /* 글꼴 굵기 */
-                        margin: 0 5px; /* 좌우 마진 조정 */
-                    }}
-                    .player-level-box {{
-                        display: inline-block; /* 인라인 블록으로 설정 */
-                        padding: 5px 5px; /* 패딩 조정 */
-                        border-radius: 10px; /* 둥근 모서리 */
-                        background-color: #333333; /* 박스 배경 색상 */
-                        color: #ffffff; /* 글자 색상 */
-                        font-weight: bold; /* 글꼴 굵기 */
-                        text-align: center; /* 텍스트 중앙 정렬 */
-                    }}
-                    .ranking-row-{index} {{
-                        display: flex;
-                        align-items: center;
-                        margin-bottom: 10px;
-                        padding: 10px;
-                        border-radius: 10px;
-                        background: {background};
-                        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-                    }}
-                    .tier-image {{
-                        width: 40px;
-                        height: 40px;
-                        border-radius: 50%;
-                        margin-right: 10px;
-                    }}
-                    .ranking-text {{
-                        color: white;
-                        font-weight: bold;
-                    }}
-                    .player-info {{
-                        flex-direction: column; /* 내용을 세로로 배열 */
-                        align-items: center; /* 센터 정렬 */
-                        flex-grow: 1; /* 이름이 차지하는 공간을 최대로 */
-                        margin: 0 10x; /* 좌우 마진 */
-                        margin-bottom: 12px; /* 아래쪽 마진 추가 */
-                    }}
-                    .player-title {{
-                        font-size: 13px;
-                        color: #F0E68C; /* 은색 */
-                        font-weight: bold; /* 볼드체 */
-                        font-style: italic; /* 이탤릭체 */
-                        animation: blinker 1s linear infinite; /* 번쩍번쩍 애니메이션 적용 */
-                    }}
-                    .ranking-number {{
-                        font-size: 26px; /* 랭킹 크기 */
-                        color: #ffffff; /* 랭킹 색상 */
-                        font-weight: bold; /* 글꼴 굵기 */
-                        margin-right: 10px;
-                    }}
-                    .player-name {{
-                        flex-grow: 1; /* 이름이 차지하는 공간을 최대로 */
-                        margin: 0 10x; /* 좌우 마진 */
-                        font-size: 18px; /* 이름 크기 */
-                        color: #ffffff; /* 이름 색상 */
-                        font-weight: bold; /* 글꼴 굵기 */
-                    }}
-                    @keyframes blinker {{
-                        50% {{
-                            opacity: 0.5; /* 반투명하게 */
-                        }}
-                    }}
-                </style>
-            """, unsafe_allow_html=True)
+                    
+                    # 페이지 스타일 설정 (각 랭킹마다 다른 배경색 적용)
+                    st.markdown(f"""
+                        <style>
+                            .win-rate {{
+                                font-size: 14px; /* 승률 글자 크기 */
+                                font-weight: bold; /* 글꼴 굵기 */
+                                margin-right: 5px; /* 우측 마진 */
+                            }}
+                            .win-loss-stats {{
+                                font-size: 13px; /* 승패 글자 크기 조정 */
+                                color: #ffffff; /* 글자 색상 */
+                                font-weight: bold; /* 글꼴 굵기 */
+                                margin: 0 5px; /* 좌우 마진 조정 */
+                            }}
+                            .player-level-box {{
+                                display: inline-block; /* 인라인 블록으로 설정 */
+                                padding: 5px 5px; /* 패딩 조정 */
+                                border-radius: 10px; /* 둥근 모서리 */
+                                background-color: #333333; /* 박스 배경 색상 */
+                                color: #ffffff; /* 글자 색상 */
+                                font-weight: bold; /* 글꼴 굵기 */
+                                text-align: center; /* 텍스트 중앙 정렬 */
+                            }}
+                            .ranking-row-{index} {{
+                                display: flex;
+                                align-items: center;
+                                margin-bottom: 10px;
+                                padding: 10px;
+                                border-radius: 10px;
+                                background: {background};
+                                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                            }}
+                            .tier-image {{
+                                width: 40px;
+                                height: 40px;
+                                border-radius: 50%;
+                                margin-right: 10px;
+                            }}
+                            .ranking-text {{
+                                color: white;
+                                font-weight: bold;
+                            }}
+                            .player-info {{
+                                flex-direction: column; /* 내용을 세로로 배열 */
+                                align-items: center; /* 센터 정렬 */
+                                flex-grow: 1; /* 이름이 차지하는 공간을 최대로 */
+                                margin: 0 10x; /* 좌우 마진 */
+                                margin-bottom: 12px; /* 아래쪽 마진 추가 */
+                            }}
+                            .player-title {{
+                                font-size: 13px;
+                                color: #F0E68C; /* 은색 */
+                                font-weight: bold; /* 볼드체 */
+                                font-style: italic; /* 이탤릭체 */
+                                animation: blinker 1s linear infinite; /* 번쩍번쩍 애니메이션 적용 */
+                            }}
+                            .ranking-number {{
+                                font-size: 26px; /* 랭킹 크기 */
+                                color: #ffffff; /* 랭킹 색상 */
+                                font-weight: bold; /* 글꼴 굵기 */
+                                margin-right: 10px;
+                            }}
+                            .player-name {{
+                                flex-grow: 1; /* 이름이 차지하는 공간을 최대로 */
+                                margin: 0 10x; /* 좌우 마진 */
+                                font-size: 18px; /* 이름 크기 */
+                                color: #ffffff; /* 이름 색상 */
+                                font-weight: bold; /* 글꼴 굵기 */
+                            }}
+                            @keyframes blinker {{
+                                50% {{
+                                    opacity: 0.5; /* 반투명하게 */
+                                }}
+                            }}
+                        </style>
+                    """, unsafe_allow_html=True)
 
-            # HTML과 CSS를 사용하여 커스텀 스타일링 적용
-            st.markdown(f"""
-                <div class="ranking-row-{index}">
-                    <div class="ranking-number">{index+1}</div>
-                    <img src="data:image/png;base64,{tier_image_base64}" style="width: 60px; height: 60px; object-fit: contain; border-radius: 50%;">
-                    <div class="player-info">
-                        <div class="player-title">{title}</div>
-                        <div class="player-name">{name}</div>
-                    </div>
-                    <div class="win-rate" style="color: {win_rate_color};">{total_win_rate * 100:.1f}%</div>
-                    <div class="win-loss-stats">{total_wins}승 / {total_matches - total_wins}패</div> <!-- 승패 수 표현 변경 -->
-                    <div class="player-level-box">Level {player_level}</div> <!-- 레벨 박스화 및 스타일 적용 -->
-                </div>
-            """, unsafe_allow_html=True)
-            
+                    # HTML과 CSS를 사용하여 커스텀 스타일링 적용
+                    st.markdown(f"""
+                        <div class="ranking-row-{index}">
+                            <div class="ranking-number">{index+1}</div>
+                            <img src="data:image/png;base64,{tier_image_base64}" style="width: 60px; height: 60px; object-fit: contain; border-radius: 50%;">
+                            <div class="player-info">
+                                <div class="player-title">{title}</div>
+                                <div class="player-name">{name}</div>
+                            </div>
+                            <div class="win-rate" style="color: {win_rate_color};">{total_win_rate * 100:.1f}%</div>
+                            <div class="win-loss-stats">{total_wins}승 / {total_matches - total_wins}패</div> <!-- 승패 수 표현 변경 -->
+                            <div class="player-level-box">Level {player_level}</div> <!-- 레벨 박스화 및 스타일 적용 -->
+                        </div>
+                    """, unsafe_allow_html=True)
+                    
         conn.close()
     else:
         st.error("랭킹 정보를 가져오는 데 실패했습니다.")
