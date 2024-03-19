@@ -551,7 +551,6 @@ def generate_rewards(conn, toto_id, actual_result):
         else:
             rewards[player_id] = 0
     return rewards
-
 # 사용자 등록 페이지
 def page_add_player():
     
@@ -620,8 +619,7 @@ def page_add_player():
                 st.error('새 패스워드를 입력하세요.')
             else:
                 update_password(conn, selected_id_p, new_password)
-                st.success('패스워드가 성공적으로 변경되었습니다.')
-             
+                st.success('패스워드가 성공적으로 변경되었습니다.')      
 # 사용자 정보 조회 페이지
 def page_view_players():
     
@@ -990,7 +988,7 @@ def page_view_players():
         conn.close()
     else:
         st.error("데이터베이스에서 참가자 목록을 가져오는 데 실패했습니다.")
-
+# 토토 경기 추가 페이지
 def page_toto_generator():
     st.markdown("""
         <style>
@@ -1062,8 +1060,8 @@ def page_toto_generator():
             }
             all_matches.append(match_info)
 
-            # 모든 경기 정보 입력 후 결과 저장 버튼
-            if st.button("모든 경기 결과 저장"):
+            # 토토 경기 정보 입력 후 결과 저장 버튼
+            if st.button("토토 경기 생성"):
                 conn = create_connection('fsi_rank.db')
                 if conn is not None:
                     for match_info in all_matches:
@@ -1083,7 +1081,6 @@ def page_toto_generator():
                     st.success("토토 경기가 생성되었습니다.")
                     
                 conn.close()
-    
 # 경기 결과 추가 페이지
 def page_add_match():
     st.markdown("""
