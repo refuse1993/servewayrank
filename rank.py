@@ -22,9 +22,24 @@ def get_image_base64(path):
         return base64.b64encode(img_file.read()).decode()
 
 # 로그인 함수: 사용자 이름과 비밀번호를 입력 받아 검증
-def login(username, password):
+def login(conn, username, password):
     # 예제를 위한 간단한 인증: 실제 앱에서는 보안을 강화해야 합니다.
-    return username == "serveway" and password == "0410"
+    if conn:
+        cur = conn.cursor()
+        try:
+            # 사용자 이름에 해당하는 비밀번호 해시 조회
+            cur.execute("SELECT Password FROM Players WHERE Name=?", (username,))
+            result = cur.fetchone()
+            if result:
+                stored_password = result[0]
+                # 비밀번호 검증
+                if stored_password == password:
+                    return True
+        except sqlite3.Error as e:
+            print(f"Database error: {e}")
+        finally:
+            conn.close()
+    return False
 
 # 로그아웃 함수: 사용자의 로그인 상태를 변경
 def logout():
@@ -33,28 +48,35 @@ def logout():
 
 # 로그인 폼을 사이드바에 표시
 def display_login_sidebar():
+    
     with st.sidebar:
-        st.title("로그인")
+        st.markdown(f"""
+        <div style='text-align: center; color: #2c3e50; font-size: 20px; font-weight: 600; margin: 10px 0; padding: 10px; background-color: #ecf0f1; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);'>
+            로그인
+        </div>
+    """, unsafe_allow_html=True)
+        conn = create_connection('fsi_rank.db')
         username = st.text_input("사용자 이름", key="username")
         password = st.text_input("비밀번호", type="password", key="password")
         
         if st.button("로그인"):
             # 로그인 함수를 호출하여 인증
-            if login(username, password):
+            if login(conn, username, password):
                 st.success("로그인 성공!")
                 st.session_state['authenticated'] = True  # 세션 상태에 인증 상태 저장
                 st.experimental_rerun()  # 로그인 성공 후 앱을 다시 실행
             else:
                 st.error("로그인 실패. 사용자 이름 또는 비밀번호를 확인하세요.")
                 
-            name = st.text_input('이름', placeholder='참가자 이름을 입력하세요.')
-        
-        st.title("신규 참가자 추가")
+        st.markdown(f"""
+        <div style='text-align: center; color: #2c3e50; font-size: 20px; font-weight: 600; margin: 10px 0; padding: 10px; background-color: #ecf0f1; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);'>
+            신규 참가자 추가
+        </div>
+    """, unsafe_allow_html=True)
         new_player = st.text_input('이름', placeholder='참가자 이름을 입력하세요.')  
         password = st.text_input('비밀번호', type='password', placeholder='비밀번호를 입력하세요.')  # 타입을 'password'로 설정하여 입력 내용이 보이지 않도록 합니다.
         experience = 10
         title = "Newbie"
-        conn = create_connection('fsi_rank.db')
 
         if st.button('참가자 추가'):
             if password == "":  # 패스워드 입력란이 비어있는지 확인합니다.
@@ -533,24 +555,6 @@ def page_add_player():
         </style>
         <div class="playeradd-header">Player Add</div>
     """, unsafe_allow_html=True)
-    st.markdown(f"""
-        <div style='text-align: center; color: #2c3e50; font-size: 20px; font-weight: 600; margin: 10px 0; padding: 10px; background-color: #ecf0f1; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);'>
-            신규 참가자 등록
-        </div>
-    """, unsafe_allow_html=True)
-            
-    name = st.text_input('이름', placeholder='참가자 이름을 입력하세요.')
-    experience = 10
-    title = "Newbie"
-    conn = create_connection('fsi_rank.db')
-    
-    if st.button('참가자 추가'):
-        if conn is not None:
-            add_player(conn, name, experience, title)
-            st.success(f'참가자 "{name}"가 성공적으로 추가되었습니다.')            
-            conn.close()
-        else:
-            st.error('데이터베이스에 연결할 수 없습니다.')
     
     st.markdown(f"""
         <div style='text-align: center; color: #2c3e50; font-size: 20px; font-weight: 600; margin: 10px 0; padding: 10px; background-color: #ecf0f1; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);'>
