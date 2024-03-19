@@ -47,6 +47,25 @@ def display_login_sidebar():
             else:
                 st.error("로그인 실패. 사용자 이름 또는 비밀번호를 확인하세요.")
                 
+            name = st.text_input('이름', placeholder='참가자 이름을 입력하세요.')
+        
+        st.title("신규 참가자 추가")
+        new_player = st.text_input('이름', placeholder='참가자 이름을 입력하세요.')  
+        password = st.text_input('비밀번호', type='password', placeholder='비밀번호를 입력하세요.')  # 타입을 'password'로 설정하여 입력 내용이 보이지 않도록 합니다.
+        experience = 10
+        title = "Newbie"
+        conn = create_connection('fsi_rank.db')
+
+        if st.button('참가자 추가'):
+            if password == "":  # 패스워드 입력란이 비어있는지 확인합니다.
+                st.error('비밀번호를 입력해주세요.')  # 비어있다면 오류 메시지를 출력합니다.
+            elif conn is not None:
+                add_player(conn, new_player, experience, title)  # 'name' 변수를 'new_player'로 변경해야 합니다.
+                st.success(f'신규 참가자 "{new_player}"가 성공적으로 추가되었습니다.')            
+                conn.close()
+            else:
+                st.error('데이터베이스에 연결할 수 없습니다.')
+                
 # Function to reset a table
 def reset_table(conn, table_name):
     cur = conn.cursor()
@@ -61,11 +80,11 @@ def get_table_select(conn, table_name):
     return rows, columns
 
 # 참가자 추가 함수
-def add_player(conn, name, experience, title):
-    sql = ''' INSERT INTO Players(Name, Experience, Title)
+def add_player(conn, name, experience, title, password):
+    sql = ''' INSERT INTO Players(Name, Experience, Title, Password)
               VALUES(?,?,?) '''
     cur = conn.cursor()
-    cur.execute(sql, (name, experience, title))
+    cur.execute(sql, (name, experience, title, password))
     conn.commit()
     return cur.lastrowid
 
@@ -459,6 +478,7 @@ def display_odds(conn):
     st.write("실시간 팀별 배당률:")
     for team, odd in odds.items():
         st.write(f"{team}: {odd * 100}%")
+# 토토 배팅 기록
 def add_toto_betting_log(conn, player_bet_details, toto_id):
     # Calculate rewards for participants based on the match result
     # Retrieve all bets placed on this match from the database
@@ -470,6 +490,7 @@ def add_toto_betting_log(conn, player_bet_details, toto_id):
     conn.commit()
 
  # 토토 보상 생성 함수
+# 토토 배팅 보상
 def generate_rewards(conn, toto_id, actual_result):
     
     cursor = conn.cursor()
