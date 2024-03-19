@@ -586,12 +586,13 @@ def generate_rewards(conn, toto_id, team_a_score=None, team_b_score=None):
         cursor.execute("SELECT Experience FROM Players WHERE PlayerID = ?", (player_id,))
         prev_experience = cursor.fetchone()[0]
 
-        # 이긴 팀에 베팅한 총액 계산
-        total_winning_bets = sum(bet[2] for bet in player_bets if bet[1] == winning_team)
-        # 이긴 팀에 베팅한 총액이 0보다 큰 경우에만 보상 계산
-        if total_winning_bets > 0:
-            ratio = bet_amount / total_winning_bets
-            reward = round(ratio * total_betting_amount, 2)
+        if bet_team == winning_team:
+            # 이긴 팀에 베팅한 총액 계산
+            total_winning_bets = sum(bet[2] for bet in player_bets if bet[1] == winning_team)
+            # 이긴 팀에 베팅한 총액이 0보다 큰 경우에만 보상 계산
+            if total_winning_bets > 0:
+                ratio = bet_amount / total_winning_bets
+                reward = round(ratio * total_betting_amount, 2)
         else:
             reward = -bet_amount  # 진 팀에 베팅한 경우, 베팅 금액만큼 손실
 
