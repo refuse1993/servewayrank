@@ -1328,7 +1328,7 @@ def page_toto_generator():
                             if has_bet_placed(conn, match_id, player_id):
                                 st.error("이미 이 경기에 대한 베팅을 하셨습니다.")
                             elif password_input and p_pass_options.get(player_id) == password_input:
-                                if int(player_points.get(player_id)) <= betting_points:
+                                if int(player_points.get(player_id)) >= betting_points:
                                     bet_team = 'A' if selected_team == 'Team A' else 'B'
                                     add_toto_betting_log(conn, (match_id, bet_team, player_id, betting_points))
                                     st.success(f"{selected_player}님이 {betting_points} 포인트로 {selected_team}에 베팅하셨습니다.")
