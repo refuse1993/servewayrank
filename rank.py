@@ -530,26 +530,7 @@ def calculate_odds(bet_data, total_winning_amount):
     for bet_team, total_bets in bet_data:
         odds[bet_team] = total_winning_amount / total_bets if total_bets else 0
     return odds
-
-# 토토 배당률 표시 함수
-def display_match_with_odds(conn, match_id):
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT bet_team, SUM(bet_amount) AS total_bets
-        FROM toto_bets
-        WHERE match_id = ?
-        GROUP BY bet_team
-    """, (match_id,))
-    betting_data = cursor.fetchall()
-
-    total_betting_amount = sum(bet[1] for bet in betting_data)
-    odds = calculate_odds(betting_data, total_betting_amount)
-
-    odds_display = ", ".join([f"Team {team}: {odd:.2f} 배당" for team, odd in odds.items()])
-    total_betting_display = f"전체 배팅 금액: {total_betting_amount}"
-
-    return odds_display, total_betting_display
-        
+       
 # 토토 배팅 기록
 def add_toto_betting_log(conn, bet_details):
     cursor = conn.cursor()
@@ -1213,9 +1194,36 @@ def page_toto_generator():
 
         for match in matches:
             match_id, date, team_a_p1, team_a_p2, team_b_p1, team_b_p2, active = match
-            odds_display, total_betting_display = display_match_with_odds(conn, match_id)
             active_match_ids = [match[0] for match in matches if match[-1]]
             
+            # DB에서 배팅 데이터 가져오기
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT bet_team, SUM(bet_amount) AS total_bets
+                FROM toto_bets
+                WHERE match_id = ?
+                GROUP BY bet_team
+            """, (match_id,))
+            betting_data = cursor.fetchall()
+
+            # 전체 배팅 금액 계산
+            total_betting_amount = sum(bet[1] for bet in betting_data)
+            
+            # 팀별 배팅 금액 초기화
+            team_a_betting_amount, team_b_betting_amount = 0, 0
+
+            # 배당률 계산 및 팀별 배팅 금액 설정
+            team_a_odds, team_b_odds = 0, 0
+            for team, total_bets in betting_data:
+                if team == 'A':
+                    team_a_betting_amount = total_bets  # 팀 A의 배팅 금액 저장
+                    if total_betting_amount > 0:
+                        team_a_odds = total_betting_amount / total_bets
+                elif team == 'B':
+                    team_b_betting_amount = total_bets  # 팀 B의 배팅 금액 저장
+                    if total_betting_amount > 0:
+                        team_b_odds = total_betting_amount / total_bets
+    
             # 플레이어 ID를 이름으로 변환
             team_a_p1_name = player_id_to_name.get(team_a_p1, "Unknown Player")
             team_a_p2_name = player_id_to_name.get(team_a_p2, "") if team_a_p2 else ""
@@ -1228,68 +1236,70 @@ def page_toto_generator():
             # 토토 상태에 따라 표시할 문구 결정
             toto_status = "토토중" if active else "토토종료"
             
-            # 토토 활성 여부에 따라 박스 스타일 설정
-            toto_status_box_style = f"""
-                padding: 5px;
-                background-color: {'#2ecc71' if active else '#e74c3c'}; /* 녹색: 활성, 빨강: 비활성 */
-                color: white;
-                border-radius: 5px;
-                margin-bottom: 10px;
-                width: fit-content;
-            """
-
-            # Streamlit 마크다운을 사용하여 경기 정보와 배팅 양식을 표시합니다.
             st.markdown(f"""
                 <style>
                     .toto-box {{
                         margin: 10px 0;
-                        padding: 15px;
+                        padding: 20px;
                         background: {background_color};
                         border-radius: 10px;
-                        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                        display: flex;
+                        flex-direction: column;
+                        gap: 10px;
                         position: relative;
                     }}
                     .toto-status {{
                         position: absolute;
                         top: 10px;
-                        left: 10px;
+                        right: 10px;
                         padding: 5px 10px;
                         border-radius: 5px;
                         color: white;
-                        background-color: {'#00b894' if active else '#34495e'};
+                        background-color: {'#2ecc71' if active else '#e74c3c'};
+                        font-size: 0.8em;
                     }}
-                    .match-info {{
-                        color: #2c3e50;
+                    .match-info, .team-info, .odds-info {{
+                        color: #ecf0f1;
                         font-weight: 600;
-                        margin-bottom: 5px;
+                        text-align: center;
                     }}
                     .team-info {{
                         display: flex;
                         justify-content: space-between;
-                        margin-top: 5px;
                     }}
-                    .team-info div {{
-                        color: #2c3e50;
+                    .odds-info {{
+                        display: flex;
+                        justify-content: space-between;
+                    }}
+                    .date-info {{
+                        position: absolute;
+                        top: 10px;
+                        left: 10px;
+                        color: #FFF;
+                        font-weight: 600;
                     }}
                 </style>
             """, unsafe_allow_html=True)
 
             st.markdown(f"""
                 <div class="toto-box">
-                    <div class="toto-status">{'토토중' if active else '토토종료'}</div>
+                    <div class="date-info">{date}</div>
+                    <div class="toto-status">{toto_status}</div>
                     <div class="match-info">Match {match_id}</div>
                     <div class="team-info">
                         <div>Team A: {team_a_p1_name} {f'& {team_a_p2_name}' if team_a_p2_name else ''}</div>
                         <div>vs</div>
                         <div>Team B: {team_b_p1_name} {f'& {team_b_p2_name}' if team_b_p2_name else ''}</div>
                     </div>
-                    <div class="match-info">{date}</div>
-                    <div class="match-info">{toto_status}</div>
-                    <div class="match-info">{odds_display}</div>
-                    <div class="match-info">{total_betting_display}</div>
+                    <div class="odds-info">
+                        <div>배당률: {team_a_odds:.2f} (Bets: {team_a_betting_amount})</div>
+                        <div>배당률: {team_b_odds:.2f} (Bets: {team_b_betting_amount})</div>
+                    </div>
+                    <div class="match-info">Total Bets: {total_betting_amount}</div>
                 </div>
             """, unsafe_allow_html=True)
-
+            
             # 경기에 참여하지 않은 플레이어 목록을 필터링합니다.
             non_participating_players = {name: player_id for name, player_id in player_options.items() if player_id not in [team_a_p1, team_a_p2, team_b_p1, team_b_p2]}
             if active:  # 활성화 상태인 경우, 배팅 양식을 표시
@@ -1317,11 +1327,21 @@ def page_toto_generator():
             else:  # 비활성화 상태인 경우, 배당 내역을 표시
                 match_rewards = display_completed_toto_rewards(conn, match_id)
                 if match_rewards:
-                    st.write(f"경기 {match_id}에 대한 배당 내역:")
+                    st.markdown(f"""
+                        <div style="margin-top: 5px;">
+                            <h5 style="color: #34495e; text-align: center;">Match {match_id} 배당 내역</h5>
+                        """, unsafe_allow_html=True)
+
                     for player_id, reward in match_rewards:
                         # 플레이어 ID를 이름으로 변환합니다.
                         player_name = player_id_to_name.get(player_id, "Unknown Player")
-                        st.write(f"{player_name}: {reward} 포인트 배당금")
+                        st.markdown(f"""
+                            <li style="margin-bottom: 5px; color: #2c3e50;">
+                                <strong>{player_name}:</strong> {int(reward)} 포인트
+                            </li>
+                        """, unsafe_allow_html=True)
+
+                    st.markdown("</ul></div></div>", unsafe_allow_html=True)  # 배당 내역 카드 및 컨테이너 닫기
                 else:
                     st.write(f"경기 {match_id}에 대한 지급된 배당금이 없습니다.")
                     
