@@ -1573,6 +1573,7 @@ def page_view_ranking():
             tier_image_path = f'icon/{tier}.png'
             tier_image_base64 = get_image_base64(tier_image_path)
             background = get_background(index)
+            player_level = math.floor(experience/100) if experience >= 100 else '0'
             title = title
             total_win_rate = 0
             total_wins = 0
@@ -1696,7 +1697,7 @@ def page_view_ranking():
                     </div>
                     <div class="win-rate" style="color: {win_rate_color};">{total_win_rate * 100:.1f}%</div>
                     <div class="win-loss-stats">{total_wins}승 / {total_matches - total_wins}패</div> <!-- 승패 수 표현 변경 -->
-                    <div class="player-level-box">Level {experience}</div> <!-- 레벨 박스화 및 스타일 적용 -->
+                    <div class="player-level-box">Level {player_level}</div> <!-- 레벨 박스화 및 스타일 적용 -->
                 </div>
             """, unsafe_allow_html=True)
             
