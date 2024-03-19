@@ -2170,7 +2170,7 @@ def page_explain():
                 font-size: 20px;
                 font-weight: bold;
                 background-color: #fff;
-                color: #6e8efb;
+                color: #333333;
                 margin-right: 10px;
             }
             .tier-level {
