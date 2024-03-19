@@ -4,6 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import itertools
 import random
+import math
 from matplotlib.ticker import FuncFormatter
 import base64
 
@@ -75,7 +76,7 @@ def display_login_sidebar():
     """, unsafe_allow_html=True)
         new_player = st.text_input('이름', placeholder='참가자 이름을 입력하세요.')  
         password = st.text_input('비밀번호', type='password', placeholder='비밀번호를 입력하세요.')  # 타입을 'password'로 설정하여 입력 내용이 보이지 않도록 합니다.
-        experience = 10
+        experience = 1000
         title = "Newbie"
 
         if st.button('참가자 추가'):
@@ -238,7 +239,7 @@ def del_match(conn, matchid):
         # 데이터베이스 연결을 닫습니다.
         conn.close()
     
-# 사용자의 경기 기록을 조회하는 함수
+# 사용자의 장비 기록을 조회하는 함수
 def get_equiphistory(conn):
     cur = conn.cursor()
     cur.execute("""
@@ -390,9 +391,12 @@ def update_experience(conn, match_details, winning_team):
 
     # 각 참가자의 티어 계산 (경험치의 첫 자리수)
     player_tiers = {
-    player_id: 0 if exp < 10 else int(str(exp)[0])
-    for player_id, exp in player_experiences.items()   
-    }
+        player_id: int(str(exp))
+        for player_id, exp in player_experiences.items() 
+        }
+    #player_id: 0 if exp < 10 else int(str(exp)[0])
+    #for player_id, exp in player_experiences.items()   
+    #}
 
     # 평균 티어 계산
     avg_tier = round(sum(player_tiers.values()) / len(player_tiers))
@@ -409,27 +413,26 @@ def update_experience(conn, match_details, winning_team):
         #승리 팀과 패배 팀 결정
         if (player_id in team_a_players and winning_team == 'A') or (player_id in team_b_players and winning_team == 'B'):
             # 승리 시 경험치 상승
-            if current_exp + weight >= 99:
+            if current_exp + weight >= 9999:
                 exp_change = 0
-            elif current_exp >= 70:
-                exp_change = 2 + weight # 경험치 70 이상인 경우 승리 시 +2
+            elif current_exp >= 6999:
+                exp_change = 200 + weight # 경험치 70 이상인 경우 승리 시 +2
             else:
-                exp_change = 3 + weight # 경험치 70 미만인 경우 승리 시 +3
+                exp_change = 300 + weight # 경험치 70 미만인 경우 승리 시 +3
         else:
             # 패배 시 경험치 하락
-            if current_exp >= 70:
-                exp_change = -3 + weight  # 정상적인 경험치 감소
+            if current_exp >= 6999:
+                exp_change = -300 + weight  # 정상적인 경험치 감소
             else:
-                if current_exp - 2 + weight < 0:  # 경험치가 0 이하로 떨어지는지 확인
+                if current_exp - 200 + weight < 0:  # 경험치가 0 이하로 떨어지는지 확인
                     exp_change = - current_exp  # 경험치를 0으로 만들기 위한 조정
                 else:
-                    exp_change = -2 + weight  # 정상적인 경험치 감소
+                    exp_change = -200 + weight  # 정상적인 경험치 감소
 
         exp_changes[player_id] = exp_change
 
     # 경험치 변경 적용
     add_match(conn, match_details, exp_changes)
-
 # 대회 점수 계산 및 순위 결정 함수
 def calculate_tournament_scores(matches):
     scores = {}  # 참가자별 점수를 저장할 딕셔너리
@@ -649,8 +652,9 @@ def page_view_players():
         selected_id = df_players[df_players['이름'] == selected_name]['ID'].iloc[0]
         selected_exp = df_players[df_players['이름'] == selected_name]['경험치'].iloc[0]
         selected_title = df_players[df_players['이름'] == selected_name]['타이틀'].iloc[0]
+        selected_level = math.floor(selected_exp/100) if selected_exp >= 100 else '0'
         
-        tier = str(selected_exp)[0] if selected_exp >= 10 else '0'
+        tier = str(selected_exp)[0] if selected_exp >= 1000 else '0'
         tier_image_path = f'icon/{tier}.png'
         tier_image_base64 = get_image_base64(tier_image_path)
             
@@ -695,7 +699,7 @@ def page_view_players():
 
         st.markdown(f"""<div class="player-info">
                 <img src="data:image/png;base64,{tier_image_base64}" style="width: 70px; height: 70px; object-fit: contain; border-radius: 50%;">
-                <div class="level-text">Level {selected_exp}</div>
+                <div class="level-text">Level {selected_level}</div>
                 <div class="player-title">{selected_title}</div>""", unsafe_allow_html=True)
         
         # 스타일을 기본값으로 설정
@@ -1563,7 +1567,7 @@ def page_view_ranking():
         ranking = cur.fetchall()
 
         for index, (player_id, name, experience, title) in enumerate(ranking):
-            tier = str(experience)[0] if experience >= 10 else '0'
+            tier = str(experience)[0] if experience >= 1000 else '0'
             tier_image_path = f'icon/{tier}.png'
             tier_image_base64 = get_image_base64(tier_image_path)
             background = get_background(index)
