@@ -2135,6 +2135,7 @@ def page_explain():
                 margin-bottom: 40px;
                 color: #fff;
                 width: 100%; /* 설명 섹션 너비 조정 */
+                font-weight: bold;
             }
             .app-description p {
                 line-height: 1.6;
@@ -2175,7 +2176,7 @@ def page_explain():
             }
             .tier-level {
                 font-size: 18px;
-                background-color: #a777e3;
+                background-color: #333333;
                 color: #fff;
                 font-weight: bold;
             }
@@ -2215,7 +2216,23 @@ def page_explain():
         '8': 'Grand Master',# 레벨 80-89
         '9': 'Challenger',  # 레벨 90-99
     }
-
+    
+    st.markdown("""
+        <style>
+        .tier-header {
+            font-size: 18px;
+            font-weight: bold;
+            background: linear-gradient(to right, #333333, #f39c12);
+            color: #FFFFFF;  # 텍스트 색상을 투명하게 설정하여 배경 그라데이션을 보이게 함
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        </style>
+        <div class="tier-header">티어표</div>
+        
+    """, unsafe_allow_html=True)
     for tier, description in tiers.items():
         level_range_start = int(tier) * 10
         level_range_end = level_range_start + 9
