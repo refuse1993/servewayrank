@@ -2204,16 +2204,16 @@ def page_explain():
 
     # 티어 정보 확장
     tiers = {
-        '0': 'Doge Tier',        # 레벨 0-9
-        '1': 'Iron Tier',        # 레벨 10-19
-        '2': 'Bronze Tier',      # 레벨 20-29
-        '3': 'Silver Tier',      # 레벨 30-39
-        '4': 'Gold Tier',        # 레벨 40-49
-        '5': 'Platinum Tier',    # 레벨 50-59
-        '6': 'Diamond Tier',     # 레벨 60-69
-        '7': 'Master Tier',      # 레벨 70-79
-        '8': 'Grand Master Tier',# 레벨 80-89
-        '9': 'Challenger Tier',  # 레벨 90-99
+        '0': 'Doge',        # 레벨 0-9
+        '1': 'Iron',        # 레벨 10-19
+        '2': 'Bronze',      # 레벨 20-29
+        '3': 'Silver',      # 레벨 30-39
+        '4': 'Gold',        # 레벨 40-49
+        '5': 'Platinum',    # 레벨 50-59
+        '6': 'Diamond',     # 레벨 60-69
+        '7': 'Master',      # 레벨 70-79
+        '8': 'Grand Master',# 레벨 80-89
+        '9': 'Challenger',  # 레벨 90-99
     }
 
     for tier, description in tiers.items():
