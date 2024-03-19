@@ -2123,6 +2123,22 @@ def page_explain():
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
                 background: linear-gradient(135deg, #6e8efb, #a777e3);
                 color: #fff;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                padding: 20px;
+            }
+            .app-description {
+                background: linear-gradient(135deg, #6e8efb, #a777e3);
+                padding: 20px;
+                border-radius: 10px;
+                margin-bottom: 40px;
+                color: #fff;
+                width: 80%; /* 설명 섹션 너비 조정 */
+                text-align: center; /* 가운데 정렬 */
+            }
+            .app-description p {
+                line-height: 1.6;
             }
             .tier-info {
                 display: flex;
@@ -2134,7 +2150,7 @@ def page_explain():
                 box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
                 transition: transform 0.3s ease;
                 text-align: center;
-                width: 400px; /* 박스 크기 조정 */
+                width: 80%; /* 박스 너비 조정 */
             }
             .tier-info:hover {
                 transform: translateY(-10px);
@@ -2143,7 +2159,6 @@ def page_explain():
                 width: 120px;
                 height: 120px;
                 object-fit: cover;
-                border-radius: 50%;
                 margin-right: 20px;
             }
             .tier-description,
@@ -2168,32 +2183,8 @@ def page_explain():
                 font-size: 24px;
                 margin-top: 10px;
             }
-            .app-description {
-                background: linear-gradient(135deg, #6e8efb, #a777e3);
-                padding: 20px;
-                border-radius: 10px;
-                margin-bottom: 40px;
-                color: #fff;
-            }
-            .app-description p {
-                line-height: 1.6;
-            }
         </style>
     """, unsafe_allow_html=True)
-    
-    # 티어 정보 확장
-    tiers = {
-        '0': 'Doge Tier',        # 레벨 0-9
-        '1': 'Iron Tier',        # 레벨 10-19
-        '2': 'Bronze Tier',      # 레벨 20-29
-        '3': 'Silver Tier',      # 레벨 30-39
-        '4': 'Gold Tier',        # 레벨 40-49
-        '5': 'Platinum Tier',    # 레벨 50-59
-        '6': 'Diamond Tier',     # 레벨 60-69
-        '7': 'Master Tier',      # 레벨 70-79
-        '8': 'Grand Master Tier',# 레벨 80-89
-        '9': 'Challenger Tier',  # 레벨 90-99
-    }
 
     # 어플 설명 섹션 추가
     st.markdown("""
@@ -2211,6 +2202,19 @@ def page_explain():
         </div>
     """, unsafe_allow_html=True)
 
+    # 티어 정보 확장
+    tiers = {
+        '0': 'Doge Tier',        # 레벨 0-9
+        '1': 'Iron Tier',        # 레벨 10-19
+        '2': 'Bronze Tier',      # 레벨 20-29
+        '3': 'Silver Tier',      # 레벨 30-39
+        '4': 'Gold Tier',        # 레벨 40-49
+        '5': 'Platinum Tier',    # 레벨 50-59
+        '6': 'Diamond Tier',     # 레벨 60-69
+        '7': 'Master Tier',      # 레벨 70-79
+        '8': 'Grand Master Tier',# 레벨 80-89
+        '9': 'Challenger Tier',  # 레벨 90-99
+    }
 
     for tier, description in tiers.items():
         level_range_start = int(tier) * 10
