@@ -416,7 +416,7 @@ def update_experience(conn, match_details, winning_team):
         if (player_id in team_a_players and winning_team == 'A') or (player_id in team_b_players and winning_team == 'B'):
             # 승리 시 포인트 상승
             if current_exp + weight >= 9999:
-                exp_change = 0
+                exp_change = 9999 - current_exp
             elif current_exp >= 6999:
                 exp_change = 200 + weight # 포인트 6999 이상인 경우 승리 시 +200
             else:
