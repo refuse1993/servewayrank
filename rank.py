@@ -562,6 +562,7 @@ def page_add_player():
         </div>
     """, unsafe_allow_html=True)
             
+    conn = create_connection('fsi_rank.db')
     if conn is not None:
         players = get_players(conn)
         df_players = pd.DataFrame(players, columns=['ID', '이름', '경험치','타이틀'])
