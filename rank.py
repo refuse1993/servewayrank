@@ -74,6 +74,7 @@ def display_login_sidebar():
             신규 참가자 추가
         </div>
     """, unsafe_allow_html=True)
+        
         new_player = st.text_input('이름', placeholder='참가자 이름을 입력하세요.')  
         password = st.text_input('비밀번호', type='password', placeholder='비밀번호를 입력하세요.')  # 타입을 'password'로 설정하여 입력 내용이 보이지 않도록 합니다.
         experience = 1000
@@ -84,7 +85,7 @@ def display_login_sidebar():
             if password == "":  # 패스워드 입력란이 비어있는지 확인합니다.
                 st.error('비밀번호를 입력해주세요.')  # 비어있다면 오류 메시지를 출력합니다.
             elif conn is not None:
-                add_player(conn, new_player, experience, title)  # 'name' 변수를 'new_player'로 변경해야 합니다.
+                add_player(conn, new_player, experience, title, password)  # 'name' 변수를 'new_player'로 변경해야 합니다.
                 st.success(f'신규 참가자 "{new_player}"가 성공적으로 추가되었습니다.')            
                 conn.close()
             else:
