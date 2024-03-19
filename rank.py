@@ -134,6 +134,14 @@ def add_equipment_history(conn, player_id, string_name, string_change_date, shoe
 
     conn.commit()
     
+#패스워드 수정 함수
+def update_password(conn, id, new_password):
+    sql = ''' UPDATE Players SET Password = ? WHERE PlayerID = ? '''
+    cur = conn.cursor()
+    player_id_int = int(id)
+    cur.execute(sql, (new_password, player_id_int))
+    conn.commit()
+    
 #타이틀 수정 함수
 def update_title(conn, id, title):
     sql = ''' UPDATE Players SET Title = ? WHERE PlayerID = ? '''
@@ -141,6 +149,13 @@ def update_title(conn, id, title):
     player_id_int = int(id)
     cur.execute(sql, (title, player_id_int))
     conn.commit()
+    
+# 참가자 패스워드 조회 함수
+def get_players_password(conn):
+    cur = conn.cursor()
+    cur.execute("SELECT PlayerID, Name, Password FROM Players")
+    rows = cur.fetchall()
+    return rows
     
 # 참가자 목록 조회 함수
 def get_players(conn):
@@ -555,29 +570,57 @@ def page_add_player():
         </style>
         <div class="playeradd-header">Player Add</div>
     """, unsafe_allow_html=True)
-    
-    st.markdown(f"""
-        <div style='text-align: center; color: #2c3e50; font-size: 20px; font-weight: 600; margin: 10px 0; padding: 10px; background-color: #ecf0f1; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);'>
-            기존 참가자 칭호 변경
-        </div>
-    """, unsafe_allow_html=True)
-            
+                
     conn = create_connection('fsi_rank.db')
     if conn is not None:
+        st.markdown(f"""
+            <div style='text-align: center; color: #2c3e50; font-size: 20px; font-weight: 600; margin: 10px 0; padding: 10px; background-color: #ecf0f1; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);'>
+                기존 참가자 칭호 변경
+            </div>
+        """, unsafe_allow_html=True)
         players = get_players(conn)
-        df_players = pd.DataFrame(players, columns=['ID', '이름', '경험치','타이틀'])
+        df_players = pd.DataFrame(players, columns=['ID', '이름', '경험치', '타이틀'])
         player_names = df_players['이름'].tolist()
-        selected_name = st.selectbox("참가자를 선택하세요", player_names)
+        
+        # 첫 번째 selectbox에 고유한 key 추가
+        selected_name = st.selectbox("참가자를 선택하세요", player_names, key='player_select')
         selected_id = df_players[df_players['이름'] == selected_name]['ID'].iloc[0]
         selected_TITLE = df_players[df_players['이름'] == selected_name]['타이틀'].iloc[0]
-        st.write("현재 칭호: ",selected_TITLE)
+        st.write("현재 칭호: ", selected_TITLE)
+        
         input_title = st.text_input("변경할 칭호를 입력하세요")
-        if st.button("변경"):
+        if st.button("칭호 변경"):
             if not input_title:
                 st.error('변경할 칭호를 입력하세요.')
-            else :
-                update_title(conn, selected_id,input_title)
+            else:
+                update_title(conn, selected_id, input_title)
                 st.success(f'칭호 "{input_title}"가 성공적으로 추가되었습니다.')
+        
+        st.markdown(f"""
+            <div style='text-align: center; color: #2c3e50; font-size: 20px; font-weight: 600; margin: 10px 0; padding: 10px; background-color: #ecf0f1; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);'>
+                기존 참가자 패스워드 변경
+            </div>
+        """, unsafe_allow_html=True)
+        players_p = get_players_password(conn)
+        df_players_p = pd.DataFrame(players_p, columns=['ID', '이름', '패스워드'])
+        player_names_p = df_players_p['이름'].tolist()
+        
+        # 두 번째 selectbox에 고유한 key 추가
+        selected_name_p = st.selectbox("참가자를 선택하세요", player_names_p, key='player_password_select')
+        selected_id_p = df_players_p[df_players_p['이름'] == selected_name_p]['ID'].iloc[0]
+        
+        old_password = st.text_input("현재 패스워드를 입력하세요", type="password", key='old_password')
+        new_password = st.text_input("변경할 패스워드를 입력하세요", type="password", key='new_password')
+        
+        if st.button("패스워드 변경"):
+            correct_password = df_players_p[df_players_p['ID'] == selected_id_p]['패스워드'].iloc[0]
+            if old_password != correct_password:
+                st.error('현재 패스워드가 일치하지 않습니다.')
+            elif not new_password:
+                st.error('새 패스워드를 입력하세요.')
+            else:
+                update_password(conn, selected_id_p, new_password)
+                st.success('패스워드가 성공적으로 변경되었습니다.')
              
 # 사용자 정보 조회 페이지
 def page_view_players():
