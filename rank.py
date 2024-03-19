@@ -1188,6 +1188,8 @@ def page_toto_generator():
         player_options = {name: player_id for player_id, name, _, _ in players}
         p_pass_options = {player_id: password for player_id, _, password in p_pass}
         player_id_to_name = {player_id: name for player_id, name, _, _ in players}
+        player_points = {player_id: points for player_id, _, points, _ in players}  # 플레이어 ID와 포인트를 매핑하는 딕셔너리 생성
+
         active_match_ids = []  # 빈 리스트로 초기화
 
         matches = sorted(matches, key=lambda x: x[0], reverse=True)
@@ -1319,19 +1321,21 @@ def page_toto_generator():
                         selected_team = st.radio("예측 승리팀", ('Team A', 'Team B'), key=f"team_{match_id}")
                         betting_points = st.number_input("베팅 포인트", min_value=100, step=100, key=f"points_{match_id}")
                         password_input = st.text_input("패스워드", type="password", key=f"password_{match_id}")
-
                         submitted = st.form_submit_button("베팅 제출")
                         if submitted:
                             player_id = non_participating_players[selected_player]
-
                             # 해당 경기에 대해 이미 베팅이 이루어진 경우 검증
                             if has_bet_placed(conn, match_id, player_id):
                                 st.error("이미 이 경기에 대한 베팅을 하셨습니다.")
                             elif password_input and p_pass_options.get(player_id) == password_input:
-                                bet_team = 'A' if selected_team == 'Team A' else 'B'
-                                add_toto_betting_log(conn, (match_id, bet_team, player_id, betting_points))
-                                st.success(f"{selected_player}님이 {betting_points} 포인트로 {selected_team}에 베팅하셨습니다.")
-                                st.experimental_rerun()
+                                if int(player_points.get(player_id)) <= betting_points:
+                                    bet_team = 'A' if selected_team == 'Team A' else 'B'
+                                    add_toto_betting_log(conn, (match_id, bet_team, player_id, betting_points))
+                                    st.success(f"{selected_player}님이 {betting_points} 포인트로 {selected_team}에 베팅하셨습니다.")
+                                    print(int(player_points.get(player_id)))
+                                    #st.experimental_rerun()
+                                else:
+                                    st.error("가지고 있는 포인트보다 많이 베팅할 수 없습니다.")
                             else:
                                 st.error("패스워드가 올바르지 않습니다.")
             else:  # 비활성화 상태인 경우, 배당 내역을 표시
