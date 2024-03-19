@@ -704,6 +704,19 @@ def page_view_players():
                 <div class="level-text">Level {selected_level}</div>
                 <div class="player-title">{selected_title}</div>""", unsafe_allow_html=True)
         
+        st.markdown(f"""
+            <div style="background-color: #f8d7da;
+                        color: #721c24;
+                        padding: 5px;
+                        border: 1px solid #f5c6cb;
+                        border-radius: 5px;
+                        font-size: 18px;
+                        text-align: center;
+                        margin-bottom: 10px;">
+                <strong>{selected_exp} point</strong>
+            </div>
+        """, unsafe_allow_html=True)
+        
         # 스타일을 기본값으로 설정
         plt.style.use('default')
             
