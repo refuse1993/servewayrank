@@ -414,22 +414,22 @@ def update_experience(conn, match_details, winning_team):
 
         #승리 팀과 패배 팀 결정
         if (player_id in team_a_players and winning_team == 'A') or (player_id in team_b_players and winning_team == 'B'):
-            # 승리 시 경험치 상승
+            # 승리 시 포인트 상승
             if current_exp + weight >= 9999:
                 exp_change = 0
             elif current_exp >= 6999:
-                exp_change = 200 + weight # 경험치 70 이상인 경우 승리 시 +2
+                exp_change = 200 + weight # 포인트 6999 이상인 경우 승리 시 +200
             else:
-                exp_change = 300 + weight # 경험치 70 미만인 경우 승리 시 +3
+                exp_change = 300 + weight # 포인트 6999 미만인 경우 승리 시 +300
         else:
-            # 패배 시 경험치 하락
+            # 패배 시 포인트 하락
             if current_exp >= 6999:
-                exp_change = -300 + weight  # 정상적인 경험치 감소
+                exp_change = -300 + weight  # 정상적인 포인트 감소
             else:
-                if current_exp - 200 + weight < 0:  # 경험치가 0 이하로 떨어지는지 확인
-                    exp_change = - current_exp  # 경험치를 0으로 만들기 위한 조정
+                if current_exp - 200 + weight < 0:  # 포인트가 0 이하로 떨어지는지 확인
+                    exp_change = - current_exp  # 포인트를 0으로 만들기 위한 조정
                 else:
-                    exp_change = -200 + weight  # 정상적인 경험치 감소
+                    exp_change = -200 + weight  # 정상적인 포인트 감소
 
         exp_changes[player_id] = exp_change
 
