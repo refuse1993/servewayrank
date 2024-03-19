@@ -80,6 +80,7 @@ def display_login_sidebar():
         title = "Newbie"
 
         if st.button('참가자 추가'):
+            conn = create_connection('fsi_rank.db')
             if password == "":  # 패스워드 입력란이 비어있는지 확인합니다.
                 st.error('비밀번호를 입력해주세요.')  # 비어있다면 오류 메시지를 출력합니다.
             elif conn is not None:
