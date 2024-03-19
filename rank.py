@@ -2281,6 +2281,7 @@ def main():
         return
     
     menu_items = {
+        "LHㄷH.GG?":page_explain,
         "랭킹": page_view_ranking,
         "전적": page_view_players,
         "토토": page_toto_generator,
@@ -2290,7 +2291,6 @@ def main():
         #"대회 경기 추가": page_add_Competition,
         "참가자 장비": page_player_setting,
         "참가자 정보 수정": page_add_player,
-        "LHㄷH.GG?":page_explain,
         "설정": page_setting
     }
     
