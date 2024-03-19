@@ -568,7 +568,7 @@ def page_add_player():
             margin-bottom: 20px;
         }
         </style>
-        <div class="playeradd-header">Player Add</div>
+        <div class="playeradd-header">Player Modify</div>
     """, unsafe_allow_html=True)
                 
     conn = create_connection('fsi_rank.db')
@@ -2183,7 +2183,7 @@ def main():
         "경기 결과 삭제": page_remove_match,
         #"대회 경기 추가": page_add_Competition,
         "참가자 장비": page_player_setting,
-        "참가자 등록": page_add_player,
+        "참가자 정보 수정": page_add_player,
         "설정": page_setting
     }
     
