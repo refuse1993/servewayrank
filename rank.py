@@ -2155,10 +2155,10 @@ def page_explain():
                 transform: translateY(-10px);
             }
             .tier-image {
-                width: 80px;
-                height: 110px;
+                width: 40x;
+                height: 70px;
                 object-fit: cover;
-                margin-right: 20px;
+                margin-right: 10px;
             }
             .tier-description,
             .tier-level {
@@ -2180,7 +2180,7 @@ def page_explain():
                 font-weight: bold;
             }
             h4 {
-                font-size: 24px;
+                font-size: 18px;
                 margin-top: 10px;
             }
         </style>
