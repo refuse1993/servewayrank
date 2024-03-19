@@ -107,7 +107,7 @@ def get_table_select(conn, table_name):
 # 참가자 추가 함수
 def add_player(conn, name, experience, title, password):
     sql = ''' INSERT INTO Players(Name, Experience, Title, Password)
-              VALUES(?,?,?) '''
+              VALUES(?,?,?,?) '''
     cur = conn.cursor()
     cur.execute(sql, (name, experience, title, password))
     conn.commit()
