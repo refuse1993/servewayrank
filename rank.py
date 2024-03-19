@@ -1226,10 +1226,7 @@ def page_remove_match():
     conn = create_connection('fsi_rank.db')
     
     if conn is not None:
-        
-
         matches = get_all_matches(conn)
-        
         if matches:
             # '날짜', '복식 여부', 'A팀 점수', 'B팀 점수', '승리 팀', 'A팀원1', 'A팀원2', 'B팀원1', 'B팀원2', '결과' 컬럼을 포함하여 DataFrame 생성
             df_matches = pd.DataFrame(matches, columns=['MATCHID','날짜', '복식 여부', 'A팀 점수', 'B팀 점수', '승리 팀', 'A팀원1', 'A팀원2', 'B팀원1', 'B팀원2'])
@@ -1240,7 +1237,7 @@ def page_remove_match():
             # 각 경기마다 고유한 키를 가진 삭제 버튼 생성
             if st.button('가장 최근 경기 기록 삭제', key=f"delete-{match_id}"):           
                 if password == correct_password:
-                    #del_match(conn, match_id)
+                    del_match(conn, match_id)
                     st.success(f"MatchID-{match_id}가 삭제되었습니다.")
                 else:
                     st.error("잘못된 패스워드입니다.")
