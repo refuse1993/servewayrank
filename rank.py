@@ -2143,8 +2143,8 @@ def page_explain():
             .tier-info {
                 display: flex;
                 align-items: center;
-                margin-bottom: 30px;
-                padding: 20px;
+                margin-bottom: 10px;
+                padding: 10px;
                 border-radius: 10px;
                 background: #fff;
                 box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -2247,7 +2247,6 @@ def page_explain():
             </div>
         """, unsafe_allow_html=True)
     
-
 def main_page():
     st.markdown("""
         <style>
