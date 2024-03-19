@@ -532,7 +532,7 @@ def calculate_odds(bet_data, total_winning_amount):
         odds[bet_team] = total_winning_amount / total_bets if total_bets else 0
     return odds
        
-# 토토 배팅 기록
+# 토토 베팅 기록
 def add_toto_betting_log(conn, bet_details):
     cursor = conn.cursor()
     cursor.execute("""
@@ -588,9 +588,9 @@ def generate_rewards(conn, toto_id, team_a_score=None, team_b_score=None):
 
         if bet_team == winning_team:
             ratio = bet_amount / total_betting_amount if total_betting_amount > 0 else 0
-            reward = round(ratio * sum(bet[2] for bet in player_bets if bet[1] == winning_team), 2)  # 이긴 팀에 배팅한 총액에 대한 비율로 보상 계산
+            reward = round(ratio * sum(bet[2] for bet in player_bets if bet[1] == winning_team), 2)  # 이긴 팀에 베팅한 총액에 대한 비율로 보상 계산
         else:
-            reward = -bet_amount  # 진 팀에 배팅한 경우, 배팅 금액만큼 손실
+            reward = -bet_amount  # 진 팀에 베팅한 경우, 베팅 금액만큼 손실
 
         post_experience = max(0, prev_experience + reward)  # 경험치가 음수가 되지 않도록 처리
         rewards[player_id] = reward
@@ -612,7 +612,7 @@ def generate_rewards(conn, toto_id, team_a_score=None, team_b_score=None):
 
 def display_completed_toto_rewards(conn, match_id):
     cursor = conn.cursor()
-    # 해당 match_id의 모든 배팅을 조회하되, 경기가 종료되었고 reward가 0보다 큰 배팅만 필터링합니다.
+    # 해당 match_id의 모든 베팅을 조회하되, 경기가 종료되었고 reward가 0보다 큰 베팅만 필터링합니다.
     cursor.execute("""
         SELECT player_id, rewards
         FROM toto_bets
@@ -1192,7 +1192,7 @@ def page_toto_generator():
             match_id, date, team_a_p1, team_a_p2, team_b_p1, team_b_p2, active = match
             active_match_ids = [match[0] for match in matches if match[-1]]
             
-            # DB에서 배팅 데이터 가져오기
+            # DB에서 베팅 데이터 가져오기
             cursor = conn.cursor()
             cursor.execute("""
                 SELECT bet_team, SUM(bet_amount) AS total_bets
@@ -1202,21 +1202,21 @@ def page_toto_generator():
             """, (match_id,))
             betting_data = cursor.fetchall()
 
-            # 전체 배팅 금액 계산
+            # 전체 베팅 금액 계산
             total_betting_amount = sum(bet[1] for bet in betting_data)
             
-            # 팀별 배팅 금액 초기화
+            # 팀별 베팅 금액 초기화
             team_a_betting_amount, team_b_betting_amount = 0, 0
 
-            # 배당률 계산 및 팀별 배팅 금액 설정
+            # 배당률 계산 및 팀별 베팅 금액 설정
             team_a_odds, team_b_odds = 0, 0
             for team, total_bets in betting_data:
                 if team == 'A':
-                    team_a_betting_amount = total_bets  # 팀 A의 배팅 금액 저장
+                    team_a_betting_amount = total_bets  # 팀 A의 베팅 금액 저장
                     if total_betting_amount > 0:
                         team_a_odds = total_betting_amount / total_bets
                 elif team == 'B':
-                    team_b_betting_amount = total_bets  # 팀 B의 배팅 금액 저장
+                    team_b_betting_amount = total_bets  # 팀 B의 베팅 금액 저장
                     if total_betting_amount > 0:
                         team_b_odds = total_betting_amount / total_bets
     
@@ -1302,7 +1302,7 @@ def page_toto_generator():
             
             # 경기에 참여하지 않은 플레이어 목록을 필터링합니다.
             non_participating_players = {name: player_id for name, player_id in player_options.items() if player_id not in [team_a_p1, team_a_p2, team_b_p1, team_b_p2]}
-            if active:  # 활성화 상태인 경우, 배팅 양식을 표시
+            if active:  # 활성화 상태인 경우, 베팅 양식을 표시
                 with st.expander(f"베팅하기 (경기 {match_id})", expanded=False):
                     with st.form(f"betting_form_{match_id}"):
                         selected_player = st.selectbox("참가자 선택", options=list(non_participating_players.keys()), key=f"player_{match_id}")
@@ -1314,9 +1314,9 @@ def page_toto_generator():
                         if submitted:
                             player_id = non_participating_players[selected_player]
 
-                            # 해당 경기에 대해 이미 배팅이 이루어진 경우 검증
+                            # 해당 경기에 대해 이미 베팅이 이루어진 경우 검증
                             if has_bet_placed(conn, match_id, player_id):
-                                st.error("이미 이 경기에 대한 배팅을 하셨습니다.")
+                                st.error("이미 이 경기에 대한 베팅을 하셨습니다.")
                             elif password_input and p_pass_options.get(player_id) == password_input:
                                 bet_team = 'A' if selected_team == 'Team A' else 'B'
                                 add_toto_betting_log(conn, (match_id, bet_team, player_id, betting_points))
@@ -2461,9 +2461,9 @@ def page_explain():
     # 어플 설명 섹션 추가
     st.markdown("""
         <div class="app-description">
-            <p>LHㄷH.GG는 레벨을 기반으로 한 티어 시스템을 제공하는 테니스 기록 프로그램입니다.</p>
+            <p>LHㄷH.GG는 포인트 기반 레벨 티어 시스템을 제공하는 테니스 기록 프로그램입니다.</p>
             <p> ※ 경기에 승리 시 +300 포인트, 패배 시 -200 포인트가 부여되며, 상대와의 포인트 차이에 따른 가중치가 존재합니다.</p>
-            <p> - 랭킹 : 레벨 별 랭킹 표, 전적이 없을 시 표시되지 않음</p>
+            <p> - 랭킹 : 레벨 별 랭킹 표, 전적이 없을 시 미표시</p>
             <p> - 전적 : 참가자 별 전적 확인</p>
             <p> - 토토 : 토토 매치 생성 및 포인트 베팅 토토</p>
             <p> - 경기 생성 : 랜덤하게 매치를 생성</p>
