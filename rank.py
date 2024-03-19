@@ -2134,7 +2134,7 @@ def page_explain():
                 border-radius: 10px;
                 margin-bottom: 40px;
                 color: #fff;
-                width: 80%; /* 설명 섹션 너비 조정 */
+                width: 100%; /* 설명 섹션 너비 조정 */
             }
             .app-description p {
                 line-height: 1.6;
@@ -2149,7 +2149,7 @@ def page_explain():
                 box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
                 transition: transform 0.3s ease;
                 text-align: center;
-                width: 80%; /* 박스 너비 조정 */
+                width: 100%; /* 박스 너비 조정 */
             }
             .tier-info:hover {
                 transform: translateY(-10px);
