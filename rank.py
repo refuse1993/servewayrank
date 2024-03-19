@@ -740,7 +740,7 @@ def page_view_players():
                         f"{symbol}{abs(diff)}", color=color, va='center', ha='center', fontdict={'weight': 'bold', 'size': 8})
 
                 # 현재 경험치 값 표시 (크고 화려하게)
-                plt.text(df_exp_history.index[i] + 1, df_exp_history['경험치'].iloc[i] + 0.025 * max(df_exp_history['경험치']),
+                plt.text(df_exp_history.index[i] + 1, df_exp_history['경험치'].iloc[i] + 0.04 * max(df_exp_history['경험치']),
                         f"{df_exp_history['경험치'].iloc[i]}", color='blue', va='center', ha='center', fontdict={'weight': 'bold', 'size': 12})
 
             plt.xlabel('Game Count')
