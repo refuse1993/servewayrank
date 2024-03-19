@@ -1297,10 +1297,14 @@ def page_toto_generator():
                         <div>B: {team_b_p1_name} {f'& {team_b_p2_name}' if team_b_p2_name else ''}</div>
                     </div>
                     <div class="odds-info">
-                        <div>배당률: {team_a_odds:.2f}</div>
-                        <div>(Bets: {team_a_betting_amount})</div>
-                        <div>배당률: {team_b_odds:.2f}</div>
-                        <div>(Bets: {team_b_betting_amount})</div>
+                        <div style="text-align: left;">
+                            <div>배당률: {team_a_odds:.2f}</div>
+                            <div>(Bets: {team_a_betting_amount})</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div>배당률: {team_b_odds:.2f}</div>
+                            <div>(Bets: {team_b_betting_amount})</div>
+                        </div>
                     </div>
                     <div class="match-info">Total Bets: {total_betting_amount}</div>
                 </div>
