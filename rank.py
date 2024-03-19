@@ -2128,27 +2128,45 @@ def page_explain():
                 display: flex;
                 align-items: center;
                 margin-bottom: 30px;
-                padding: 10px;
+                padding: 20px;
                 border-radius: 10px;
                 background: linear-gradient(135deg, #6e8efb, #a777e3);
                 box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
                 transition: transform 0.3s ease;
+                text-align: center;
+                width: 400px; /* 박스 크기 조정 */
             }
             .tier-info:hover {
                 transform: translateY(-10px);
             }
             .tier-image {
-                width: 80px;
-                height: 80px;
+                width: 120px;
+                height: 120px;
                 object-fit: cover;
-                border-radius: 20%;
+                border-radius: 50%;
                 margin-right: 20px;
-                border: 3px solid #fff;
-                background:#fff;
+            }
+            .tier-description,
+            .tier-level {
+                flex: 1; /* 박스 크기 조정 */
+                padding: 10px; /* 내부 여백 추가 */
+                border-radius: 5px;
             }
             .tier-description {
-                font-size: 18px;
+                font-size: 20px;
                 font-weight: bold;
+                background-color: #fff;
+                color: #6e8efb;
+                margin-right: 10px;
+            }
+            .tier-level {
+                font-size: 18px;
+                background-color: #a777e3;
+                color: #fff;
+            }
+            h4 {
+                font-size: 24px;
+                margin-top: 10px;
             }
             .app-description {
                 background: linear-gradient(135deg, #6e8efb, #a777e3);
@@ -2162,6 +2180,7 @@ def page_explain():
             }
         </style>
     """, unsafe_allow_html=True)
+    
     # 티어 정보 확장
     tiers = {
         '0': 'Doge Tier',        # 레벨 0-9
@@ -2182,7 +2201,7 @@ def page_explain():
             <p>LHㄷH.GG는 레벨을 기반으로 한 티어 시스템을 제공하는 테니스 기록 프로그램입니다.</p>
             <p> - 경기에 승리 시 +3 레벨, 패배 -2 레벨이 부여되며, 상대와의 티어 차이에 따른 가중치가 존재합니다.</p>
             <p> - 랭킹 : 레벨 별 랭킹 표 화면입니다.</p>
-            <p> - 전적 : 참가자 별 전적 확인 화면입니다./p>
+            <p> - 전적 : 참가자 별 전적 확인 화면입니다.</p>
             <p> - 토토 : 토토 매치 생성 및 레벨 베팅으로 레벨을 얻거나 잃을 수 있습니다.</p>
             <p> - 경기 생성 : 랜덤하게 매치를 생성해줍니다.</p>
             <p> - 경기 결과 추가 : 매치가 끝난 결과를 등록하는 화면입니다.</p>
@@ -2201,9 +2220,9 @@ def page_explain():
 
         st.markdown(f"""
             <div class="tier-info">
-                <h4>레벨 {level_range_start} - {level_range_end}</h4>
                 <img src="data:image/png;base64,{tier_image_base64}" class="tier-image">
                 <div class="tier-description">{description}</div>
+                <div class="tier-level">레벨 {level_range_start} - {level_range_end}</div>
             </div>
         """, unsafe_allow_html=True)
     
