@@ -1110,7 +1110,7 @@ def page_toto_generator():
         player_options = {name: player_id for player_id, name, _, _ in players}  # 참가자 이름과 ID를 매핑하는 딕셔너리 생성
         
         # Expander로 경기 입력 및 공통 정보 입력 부분을 감싸기
-        with st.expander("TOTO Match Generator"):
+        with st.expander("토토 경기 생성"):
             # 경기 입력 및 공통 정보 입력
             date = st.date_input("경기 날짜")
             is_doubles = st.checkbox("복식 여부")
@@ -1121,7 +1121,7 @@ def page_toto_generator():
             # 각 경기에 대한 입력
             
             st.markdown(f"""
-                <div style='text-align: center; color: #2c3e50; font-size: 20px; font-weight: 600; margin: 10px 0; padding: 10px; background-color: #ecf0f1; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);'>
+                <div style='text-align: center; color: #2c3e50; font-size: 20px; font-weight: 600; margin: 10px 0; padding: 3px; background-color: #ecf0f1; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);'>
                     TOTO Match
                 </div>
                 """, unsafe_allow_html=True)
@@ -1347,7 +1347,7 @@ def page_toto_generator():
                     
         correct_password = "1626"
 
-        with st.expander(f"토토 끝내기", expanded=False):
+        with st.expander(f"토토 경기 종료", expanded=False):
             with st.form("complete_match_form"):
                 match_id = st.selectbox("활성화된 매치 선택", active_match_ids)
                 team_a_score = st.number_input("Team A 점수", min_value=0, step=1, format="%d")
