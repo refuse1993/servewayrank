@@ -1240,22 +1240,53 @@ def page_toto_generator():
 
             # Streamlit 마크다운을 사용하여 경기 정보와 배팅 양식을 표시합니다.
             st.markdown(f"""
-                <div style="margin: 10px 0;">
-                    <div style="{toto_status_box_style}">{'토토중' if active else '토토종료'}</div>
-                    <div style="padding: 15px; background: {background_color}; border-radius: 10px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
-                        <div style="color: #2c3e50; font-weight: 600; margin-bottom: 5px;">Match {match_id}</div>
-                        <div style="display: flex; justify-content: space-between;">
-                            <div style="color: #2c3e50;">{date}</div>
-                            <div style="color: #2c3e50;">{toto_status}</div>
-                        </div>
-                        <div style="display: flex; justify-content: space-between;">
-                            <div style="color: #2c3e50;">Team A: {team_a_p1_name} {f'& {team_a_p2_name}' if team_a_p2_name else ''}</div>
-                            <div style="color: #2c3e50;">vs</div>
-                            <div style="color: #2c3e50;">Team B: {team_b_p1_name} {f'& {team_b_p2_name}' if team_b_p2_name else ''}</div>
-                        </div>
-                        <div style="color: #2c3e50; font-weight: 500; margin-top: 5px;">{odds_display}</div>
-                        <div style="color: #2c3e50; font-weight: 500; margin-top: 5px;">{total_betting_display}</div>
+                <style>
+                    .toto-box {{
+                        margin: 10px 0;
+                        padding: 15px;
+                        background: {background_color};
+                        border-radius: 10px;
+                        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                        position: relative;
+                    }}
+                    .toto-status {{
+                        position: absolute;
+                        top: 10px;
+                        left: 10px;
+                        padding: 5px 10px;
+                        border-radius: 5px;
+                        color: white;
+                        background-color: {'#00b894' if active else '#34495e'};
+                    }}
+                    .match-info {{
+                        color: #2c3e50;
+                        font-weight: 600;
+                        margin-bottom: 5px;
+                    }}
+                    .team-info {{
+                        display: flex;
+                        justify-content: space-between;
+                        margin-top: 5px;
+                    }}
+                    .team-info div {{
+                        color: #2c3e50;
+                    }}
+                </style>
+            """, unsafe_allow_html=True)
+
+            st.markdown(f"""
+                <div class="toto-box">
+                    <div class="toto-status">{'토토중' if active else '토토종료'}</div>
+                    <div class="match-info">Match {match_id}</div>
+                    <div class="team-info">
+                        <div>Team A: {team_a_p1_name} {f'& {team_a_p2_name}' if team_a_p2_name else ''}</div>
+                        <div>vs</div>
+                        <div>Team B: {team_b_p1_name} {f'& {team_b_p2_name}' if team_b_p2_name else ''}</div>
                     </div>
+                    <div class="match-info">{date}</div>
+                    <div class="match-info">{toto_status}</div>
+                    <div class="match-info">{odds_display}</div>
+                    <div class="match-info">{total_betting_display}</div>
                 </div>
             """, unsafe_allow_html=True)
 
