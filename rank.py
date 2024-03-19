@@ -2137,33 +2137,43 @@ def page_explain():
         </style>
     """, unsafe_allow_html=True)
 
-    # 설명창에 표시할 티어 이미지와 설명
+    # 티어 정보 확장
     tiers = {
-        '0': 'Doge Tier',
-        '1': 'Iron Tier',
-        '2': 'Bronze Tier',
-        '3': 'Silver Tier',
-        '4': 'Gold Tier',
-        '5': 'Platinum Tier',
-        '6': 'Diamond Tier',
-        '7': 'Master Tier',
-        '8': 'Grand Master Tier',
-        '9': 'Challenger Tier',
-        # 나머지 티어 정보 추가
+        '0': 'Doge Tier',        # 레벨 0-9
+        '1': 'Iron Tier',        # 레벨 10-19
+        '2': 'Bronze Tier',      # 레벨 20-29
+        '3': 'Silver Tier',      # 레벨 30-39
+        '4': 'Gold Tier',        # 레벨 40-49
+        '5': 'Platinum Tier',    # 레벨 50-59
+        '6': 'Diamond Tier',     # 레벨 60-69
+        '7': 'Master Tier',      # 레벨 70-79
+        '8': 'Grand Master Tier',# 레벨 80-89
+        '9': 'Challenger Tier',  # 레벨 90-99
     }
+
+    # 어플 설명 섹션 추가
+    st.markdown("""
+        <div class="app-description">
+            <h2>어플리케이션 설명</h2>
+            <p>이 어플리케이션은 사용자의 성취와 레벨을 기반으로 한 독특한 티어 시스템을 제공합니다. 각 티어는 사용자의 진행 상태와 성과를 시각적으로 표현하여, 목표 달성을 위한 동기 부여를 증진시킵니다.</p>
+        </div>
+    """, unsafe_allow_html=True)
 
     # 설명창 내용 생성
     for tier, description in tiers.items():
+        level_range_start = int(tier) * 10
+        level_range_end = level_range_start + 9
         tier_image_path = f'icon/{tier}.png'  # 실제 이미지 경로로 변경 필요
+        # 이 부분에서 'get_image_base64()' 함수를 정의하고 사용해야 합니다.
         tier_image_base64 = get_image_base64(tier_image_path)  # 이미지를 Base64로 인코딩하는 함수 필요
 
         st.markdown(f"""
             <div class="tier-info">
+                <h3>레벨 {level_range_start} - {level_range_end}</h3>
                 <img src="data:image/png;base64,{tier_image_base64}" class="tier-image">
                 <div class="tier-description">{description}</div>
             </div>
         """, unsafe_allow_html=True)
-    
     
 
 def main_page():
