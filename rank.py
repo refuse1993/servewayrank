@@ -2135,7 +2135,6 @@ def page_explain():
                 margin-bottom: 40px;
                 color: #fff;
                 width: 80%; /* 설명 섹션 너비 조정 */
-                text-align: center; /* 가운데 정렬 */
             }
             .app-description p {
                 line-height: 1.6;
@@ -2146,7 +2145,7 @@ def page_explain():
                 margin-bottom: 30px;
                 padding: 20px;
                 border-radius: 10px;
-                background: linear-gradient(135deg, #6e8efb, #a777e3);
+                background: #fff;
                 box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
                 transition: transform 0.3s ease;
                 text-align: center;
@@ -2156,8 +2155,8 @@ def page_explain():
                 transform: translateY(-10px);
             }
             .tier-image {
-                width: 120px;
-                height: 120px;
+                width: 80px;
+                height: 110px;
                 object-fit: cover;
                 margin-right: 20px;
             }
@@ -2178,6 +2177,7 @@ def page_explain():
                 font-size: 18px;
                 background-color: #a777e3;
                 color: #fff;
+                font-weight: bold;
             }
             h4 {
                 font-size: 24px;
@@ -2190,7 +2190,7 @@ def page_explain():
     st.markdown("""
         <div class="app-description">
             <p>LHㄷH.GG는 레벨을 기반으로 한 티어 시스템을 제공하는 테니스 기록 프로그램입니다.</p>
-            <p> - 경기에 승리 시 +3 레벨, 패배 -2 레벨이 부여되며, 상대와의 티어 차이에 따른 가중치가 존재합니다.</p>
+            <p> ※ 경기에 승리 시 +3 레벨, 패배 -2 레벨이 부여되며, 상대와의 티어 차이에 따른 가중치가 존재합니다.</p>
             <p> - 랭킹 : 레벨 별 랭킹 표 화면입니다.</p>
             <p> - 전적 : 참가자 별 전적 확인 화면입니다.</p>
             <p> - 토토 : 토토 매치 생성 및 레벨 베팅으로 레벨을 얻거나 잃을 수 있습니다.</p>
