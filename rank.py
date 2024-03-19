@@ -185,6 +185,7 @@ def get_player_matches(conn, player_id):
         JOIN Players p3 ON m.TeamBPlayer1ID = p3.PlayerID
         LEFT JOIN Players p4 ON m.TeamBPlayer2ID = p4.PlayerID
         WHERE ? IN (m.TeamAPlayer1ID, m.TeamAPlayer2ID, m.TeamBPlayer1ID, m.TeamBPlayer2ID)
+        AND m.WinningTeam IS NOT NULL
         ORDER BY m.Date ASC
         """, (player_id_int, player_id_int, player_id_int))
     matches = cur.fetchall()
@@ -547,7 +548,6 @@ def generate_rewards(conn, toto_id, team_a_score=None, team_b_score=None):
     
     if team_a_score is None:
         team_a_score = 0
-    # team_b_score가 명시적으로 전달되지 않았을 때 기본값으로 0을 사용
     if team_b_score is None:
         team_b_score = 0
 
@@ -556,7 +556,6 @@ def generate_rewards(conn, toto_id, team_a_score=None, team_b_score=None):
     elif team_a_score < team_b_score:
         winning_team = 'B'
     else:
-        # 점수가 같을 경우에 대한 처리
         winning_team = None
         
     cursor.execute("""
@@ -565,7 +564,6 @@ def generate_rewards(conn, toto_id, team_a_score=None, team_b_score=None):
         WHERE MatchID = ?
     """, (team_a_score, team_b_score, winning_team, match_id))
     
-    # bets 대신 toto_bets 테이블을 조회해야 합니다. 또한 player_name 컬럼은 toto_bets 테이블에 없으므로 제거합니다.
     cursor.execute("""
         SELECT player_id, bet_team, bet_amount
         FROM toto_bets
@@ -574,9 +572,8 @@ def generate_rewards(conn, toto_id, team_a_score=None, team_b_score=None):
     player_bets = cursor.fetchall()
 
     rewards = {}
-    total_betting_amount = sum(bet_amount for _, _, bet_amount in player_bets)  # 모든 팀에 걸린 포인트의 합
-    print('total_betting_amount',total_betting_amount)
-    # 배당금 지급 전 후의 경험치를 계산하고 변경사항을 기록합니다.
+    total_betting_amount = sum(bet_amount for _, _, bet_amount in player_bets)
+
     for player_id, bet_team, bet_amount in player_bets:
         if player_id == 0:
             cursor.execute("""
@@ -588,31 +585,26 @@ def generate_rewards(conn, toto_id, team_a_score=None, team_b_score=None):
         
         cursor.execute("SELECT Experience FROM Players WHERE PlayerID = ?", (player_id,))
         prev_experience = cursor.fetchone()[0]
-        print(bet_team,'==',winning_team)
+
         if bet_team == winning_team:
             ratio = bet_amount / total_betting_amount if total_betting_amount > 0 else 0
-            reward = round(ratio * sum(bet[2] for bet in player_bets), 2)
-            post_experience = prev_experience + reward
+            reward = round(ratio * sum(bet[2] for bet in player_bets if bet[1] == winning_team), 2)  # 이긴 팀에 배팅한 총액에 대한 비율로 보상 계산
         else:
-            reward = 0
-            post_experience = prev_experience
+            reward = -bet_amount  # 진 팀에 배팅한 경우, 배팅 금액만큼 손실
 
-        print('reward :',reward)
+        post_experience = max(0, prev_experience + reward)  # 경험치가 음수가 되지 않도록 처리
         rewards[player_id] = reward
 
-        # ExperienceHistory 업데이트
         cursor.execute("""
             INSERT INTO ExperienceHistory (MatchID, PlayerID, Date, PreviousExperience, PostExperience)
             VALUES (?, ?, CURRENT_DATE, ?, ?)
         """, (match_id, player_id, prev_experience, post_experience))
 
-        # Players 테이블의 경험치 업데이트
         cursor.execute("UPDATE Players SET Experience = ? WHERE PlayerID = ?", (post_experience, player_id))
 
-        # toto_bets 테이블의 reward 업데이트 및 active 상태 변경
         cursor.execute("""
             UPDATE toto_bets
-            SET reward = ?, active = 0
+            SET rewards = ?, active = 0
             WHERE match_id = ? AND player_id = ?
         """, (reward, match_id, player_id))
         
@@ -622,9 +614,9 @@ def display_completed_toto_rewards(conn, match_id):
     cursor = conn.cursor()
     # 해당 match_id의 모든 배팅을 조회하되, 경기가 종료되었고 reward가 0보다 큰 배팅만 필터링합니다.
     cursor.execute("""
-        SELECT player_id, reward
+        SELECT player_id, rewards
         FROM toto_bets
-        WHERE match_id = ? AND active = 0 AND reward > 0
+        WHERE match_id = ? AND active = 0 and player_id != 0
     """, (match_id,))
     rewards = cursor.fetchall()
     return rewards
@@ -826,8 +818,8 @@ def page_view_players():
                 plt.text(df_exp_history.index[i] + 1, df_exp_history['경험치'].iloc[i] + 0.045 * max(df_exp_history['경험치']),
                         f"{df_exp_history['경험치'].iloc[i]}", color='blue', va='center', ha='center', fontdict={'weight': 'bold', 'size': 12})
 
-            plt.xlabel('Game Count')
-            plt.ylabel('LEVEL')
+            plt.xlabel('Point Change')
+            plt.ylabel('Point')
             plt.grid(False)
 
             plt.tick_params(
@@ -1026,6 +1018,8 @@ def page_view_players():
                     </div>
                 """, unsafe_allow_html=True)
 
+
+
             if show_doubles:
                 filtered_matches = df_matches[df_matches['복식 여부'] == True]  # 복식 경기만 필터링
             elif show_singles:
@@ -1192,6 +1186,8 @@ def page_toto_generator():
         player_id_to_name = {player_id: name for player_id, name, _, _ in players}
         active_match_ids = []  # 빈 리스트로 초기화
 
+        matches = sorted(matches, key=lambda x: x[0], reverse=True)
+
         for match in matches:
             match_id, date, team_a_p1, team_a_p2, team_b_p1, team_b_p2, active = match
             active_match_ids = [match[0] for match in matches if match[-1]]
@@ -1230,6 +1226,10 @@ def page_toto_generator():
             team_b_p1_name = player_id_to_name.get(team_b_p1, "Unknown Player")
             team_b_p2_name = player_id_to_name.get(team_b_p2, "") if team_b_p2 else ""
 
+            # 고유한 식별자를 포함한 클래스 이름 생성
+            toto_box_class = f"toto-box-{match_id}"
+            toto_status_class = f"toto-status-{match_id}"
+
             # 배경색 설정
             background_color = "#00b894" if active else "#34495e"  # 활성화 상태면 녹색, 비활성화면 다크한 색
             
@@ -1238,7 +1238,7 @@ def page_toto_generator():
             
             st.markdown(f"""
                 <style>
-                    .toto-box {{
+                    .{toto_box_class} {{
                         margin: 10px 0;
                         padding: 20px;
                         background: {background_color};
@@ -1249,14 +1249,14 @@ def page_toto_generator():
                         gap: 10px;
                         position: relative;
                     }}
-                    .toto-status {{
+                    .{toto_status_class} {{
                         position: absolute;
                         top: 10px;
                         right: 10px;
                         padding: 5px 10px;
                         border-radius: 5px;
                         color: white;
-                        background-color: {'#2ecc71' if active else '#e74c3c'};
+                        background-color: {('#2ecc71' if active else '#e74c3c')};
                         font-size: 0.8em;
                     }}
                     .match-info, .team-info, .odds-info {{
@@ -1283,14 +1283,14 @@ def page_toto_generator():
             """, unsafe_allow_html=True)
 
             st.markdown(f"""
-                <div class="toto-box">
+                <div class="{toto_box_class}">
                     <div class="date-info">{date}</div>
-                    <div class="toto-status">{toto_status}</div>
+                    <div class="{toto_status_class}">{toto_status}</div>
                     <div class="match-info">Match {match_id}</div>
                     <div class="team-info">
-                        <div>Team A: {team_a_p1_name} {f'& {team_a_p2_name}' if team_a_p2_name else ''}</div>
+                        <div>A: {team_a_p1_name} {f'& {team_a_p2_name}' if team_a_p2_name else ''}</div>
                         <div>vs</div>
-                        <div>Team B: {team_b_p1_name} {f'& {team_b_p2_name}' if team_b_p2_name else ''}</div>
+                        <div>B: {team_b_p1_name} {f'& {team_b_p2_name}' if team_b_p2_name else ''}</div>
                     </div>
                     <div class="odds-info">
                         <div>배당률: {team_a_odds:.2f} (Bets: {team_a_betting_amount})</div>
