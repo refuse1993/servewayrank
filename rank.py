@@ -1353,7 +1353,7 @@ def page_toto_generator():
 
                     st.markdown("</ul></div></div>", unsafe_allow_html=True)  # 배당 내역 카드 및 컨테이너 닫기
                 else:
-                    st.write(f"경기 {match_id}에 대한 지급된 배당금이 없습니다.")
+                    st.write(f"Match {match_id}에 대한 지급된 배당금이 없습니다.")
                     
         correct_password = "1626"
 
