@@ -2164,12 +2164,11 @@ def page_explain():
         level_range_start = int(tier) * 10
         level_range_end = level_range_start + 9
         tier_image_path = f'icon/{tier}.png'  # 실제 이미지 경로로 변경 필요
-        # 이 부분에서 'get_image_base64()' 함수를 정의하고 사용해야 합니다.
         tier_image_base64 = get_image_base64(tier_image_path)  # 이미지를 Base64로 인코딩하는 함수 필요
 
         st.markdown(f"""
             <div class="tier-info">
-                <h3>레벨 {level_range_start} - {level_range_end}</h3>
+                <h4>레벨 {level_range_start} - {level_range_end}</h4>
                 <img src="data:image/png;base64,{tier_image_base64}" class="tier-image">
                 <div class="tier-description">{description}</div>
             </div>
