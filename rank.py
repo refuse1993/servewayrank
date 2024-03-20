@@ -1319,7 +1319,7 @@ def page_toto_generator():
                     with st.form(f"betting_form_{match_id}"):
                         selected_player = st.selectbox("참가자 선택", options=list(non_participating_players.keys()), key=f"player_{match_id}")
                         selected_team = st.radio("예측 승리팀", ('Team A', 'Team B'), key=f"team_{match_id}")
-                        betting_points = st.number_input("베팅 포인트", min_value=100, step=100, key=f"points_{match_id}")
+                        betting_points = st.number_input("베팅 포인트", min_value=100, max_value=1000, step=100, key=f"points_{match_id}")
                         password_input = st.text_input("패스워드", type="password", key=f"password_{match_id}")
                         submitted = st.form_submit_button("베팅 제출")
                         if submitted:
