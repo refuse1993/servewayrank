@@ -8,6 +8,13 @@ import math
 from matplotlib.ticker import FuncFormatter
 import base64
 
+# 페이지 설정
+st.set_page_config(
+        page_title="LHㄷH.GG",  # 페이지 타이틀 설정
+        page_icon="🎾",  # 테니스 공 이모지를 페이지 아이콘으로 사용
+        layout="wide"  # 넓은 레이아웃 사용
+)
+    
 # 데이터베이스 연결 함수
 def create_connection(db_file):
     conn = None
@@ -2619,6 +2626,7 @@ def page_explain():
         """, unsafe_allow_html=True)
     
 def main_page():
+
     st.markdown("""
         <style>
             .welcome-text {
