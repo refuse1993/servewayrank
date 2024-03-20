@@ -1240,7 +1240,7 @@ def page_toto_generator():
             background_color = "#00b894" if active else "#34495e"  # 활성화 상태면 녹색, 비활성화면 다크한 색
             
             # 토토 상태에 따라 표시할 문구 결정
-            toto_status = "토토중" if active else "토토종료"
+            toto_status = "베팅중" if active else "베팅종료"
             
             st.markdown(f"""
                 <style>
