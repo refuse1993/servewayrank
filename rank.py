@@ -249,7 +249,7 @@ def get_match_details(conn, match_id):
     cur = conn.cursor()
     match_id_int = int(match_id)
     cur.execute("""
-        SELECT Date, IsTournament, IsDoubles, TeamAPlayer1ID, TeamAPlayer2ID, TeamAScore, TeamBPlayer1ID, TeamBPlayer2ID, TeamBScore, WinningTeam
+        SELECT MatchID, Date, IsTournament, IsDoubles, TeamAPlayer1ID, TeamAPlayer2ID, TeamAScore, TeamBPlayer1ID, TeamBPlayer2ID, TeamBScore, WinningTeam
         FROM matches
         WHERE MatchID = ?
     """, (match_id_int,))
@@ -394,11 +394,11 @@ def update_toto_match(conn, match_details, winning_team):
     exp_changes = {}  # 경험치 변경 사항을 저장할 딕셔너리
 
     # A팀과 B팀 플레이어 ID 추출
-    team_a_players = [match_details[3]]
-    team_b_players = [match_details[6]]
-    if match_details[2]:  # 단복식 여부 확인
-        team_a_players.append(match_details[4])
-        team_b_players.append(match_details[7])
+    team_a_players = [match_details[4]]
+    team_b_players = [match_details[7]]
+    if match_details[3]:  # 단복식 여부 확인
+        team_a_players.append(match_details[5])
+        team_b_players.append(match_details[8])
         
     # 모든 참가자의 경험치 조회
     all_players = team_a_players + team_b_players
