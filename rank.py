@@ -1329,12 +1329,13 @@ def page_toto_generator():
                                 st.error("이미 이 경기에 대한 베팅을 하셨습니다.")
                             elif password_input and p_pass_options.get(player_id) == password_input:
                                 if int(player_points.get(player_id)) >= betting_points:
+                                    get_p = int(player_points.get(player_id))
                                     bet_team = 'A' if selected_team == 'Team A' else 'B'
                                     add_toto_betting_log(conn, (match_id, bet_team, player_id, betting_points))
                                     st.success(f"{selected_player}님이 {betting_points} 포인트로 {selected_team}에 베팅하셨습니다.")
                                     st.experimental_rerun()
                                 else:
-                                    st.error("가지고 있는 포인트보다 많이 베팅할 수 없습니다.")
+                                    st.error("소유한 포인트({get_p}p)보다 많이 베팅할 수 없습니다.")
                             else:
                                 st.error("패스워드가 올바르지 않습니다.")
             else:  # 비활성화 상태인 경우, 배당 내역을 표시
