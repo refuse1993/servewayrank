@@ -244,7 +244,17 @@ def del_match(conn, matchid):
     finally:
         # 데이터베이스 연결을 닫습니다.
         conn.close()
-    
+
+def get_match_details(conn, match_id):
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT MatchDate, IsTournament, IsDoubles, TeamAPlayer1ID, TeamAPlayer2ID, TeamAScore, TeamBPlayer1ID, TeamBPlayer2ID, TeamBScore, WinningTeam
+        FROM matches
+        WHERE MatchID = ?
+    """, (match_id,))
+    match_details = cur.fetchone()
+    return match_details
+
 # 사용자의 장비 기록을 조회하는 함수
 def get_equiphistory(conn):
     cur = conn.cursor()
@@ -378,6 +388,77 @@ def add_match(conn, match_details, player_exp_changes):
 
     conn.commit()
 
+def update_toto_match(conn, match_details, winning_team):
+    cur = conn.cursor()    
+    exp_changes = {}  # 경험치 변경 사항을 저장할 딕셔너리
+
+    # A팀과 B팀 플레이어 ID 추출
+    team_a_players = [match_details[3]]
+    team_b_players = [match_details[6]]
+    if match_details[2]:  # 단복식 여부 확인
+        team_a_players.append(match_details[4])
+        team_b_players.append(match_details[7])
+        
+    # 모든 참가자의 경험치 조회
+    all_players = team_a_players + team_b_players
+    cur.execute(f"SELECT PlayerID, Experience FROM Players WHERE PlayerID IN ({','.join('?' * len(all_players))})", all_players)
+    player_experiences = dict(cur.fetchall())
+
+    # 각 참가자의 티어 계산 (경험치의 첫 자리수)
+    player_tiers = {
+        player_id: int(str(exp))
+        for player_id, exp in player_experiences.items() 
+        }
+
+    # 평균 티어 계산
+    avg_tier = round(sum(player_tiers.values()) / len(player_tiers))
+
+    # 각 참가자에 대한 경험치 변경 계산
+    for player_id in all_players:
+        player_tier = player_tiers[player_id]
+        current_exp = player_experiences[player_id]
+
+        # 티어와 평균티어의 차이를 기반으로 가중치 다시 계산
+        tier_difference = avg_tier - player_tier
+        weight = round(tier_difference / 20)  # 티어 차이를 반으로 줄여 가중치로 사용
+
+        #승리 팀과 패배 팀 결정
+        if (player_id in team_a_players and winning_team == 'A') or (player_id in team_b_players and winning_team == 'B'):
+            # 승리 시 포인트 상승
+            if current_exp + weight >= 9999:
+                exp_change = 9999 - current_exp
+            elif current_exp >= 6999:
+                exp_change = 200 + weight # 포인트 6999 이상인 경우 승리 시 +200
+            else:
+                exp_change = 300 + weight # 포인트 6999 미만인 경우 승리 시 +300
+        else:
+            # 패배 시 포인트 하락
+            if current_exp >= 6999:
+                exp_change = -300 + weight  # 정상적인 포인트 감소
+            else:
+                if current_exp - 200 + weight < 0:  # 포인트가 0 이하로 떨어지는지 확인
+                    exp_change = - current_exp  # 포인트를 0으로 만들기 위한 조정
+                else:
+                    exp_change = -200 + weight  # 정상적인 포인트 감소
+
+        exp_changes[player_id] = exp_change
+
+    # 경험치 변경 사항을 Players 테이블과 ExperienceHistory 테이블에 반영
+    for player_id, exp_change in exp_changes.items():
+        # Players 테이블 업데이트
+        update_sql = ''' UPDATE Players SET Experience = Experience + ? WHERE PlayerID = ? '''
+        cur.execute(update_sql, (exp_change, player_id))
+
+        # 경험치 변경 이력 추가
+        history_sql = ''' INSERT INTO ExperienceHistory(MatchID, PlayerID, Date, PreviousExperience, PostExperience)
+                          VALUES(?,?,?,?,?) '''
+        # 현재 경험치 조회
+        cur.execute("SELECT Experience FROM Players WHERE PlayerID = ?", (player_id,))
+        current_exp = cur.fetchone()[0] - exp_change  # 변경 전 경험치 계산
+        cur.execute(history_sql, (match_details[0], player_id, match_details[1], current_exp, current_exp + exp_change))
+
+    conn.commit()
+
 # 경험치 변경 로직에 따른 경험치 업데이트
 def update_experience(conn, match_details, winning_team):
     exp_changes = {}  # 경험치 변경 사항을 저장할 딕셔너리
@@ -439,6 +520,7 @@ def update_experience(conn, match_details, winning_team):
 
     # 경험치 변경 적용
     add_match(conn, match_details, exp_changes)
+    
 # 대회 점수 계산 및 순위 결정 함수
 def calculate_tournament_scores(matches):
     scores = {}  # 참가자별 점수를 저장할 딕셔너리
@@ -611,6 +693,9 @@ def generate_rewards(conn, toto_id, team_a_score=None, team_b_score=None):
             SET rewards = ?, active = 0
             WHERE match_id = ? AND player_id = ?
         """, (reward, match_id, player_id))
+        
+    match_details = get_match_details(conn, match_id)
+    update_toto_match(conn, match_details, winning_team)
         
     conn.commit()
 
