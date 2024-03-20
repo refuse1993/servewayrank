@@ -249,7 +249,7 @@ def get_match_details(conn, match_id):
     cur = conn.cursor()
     match_id_int = int(match_id)
     cur.execute("""
-        SELECT MatchDate, IsTournament, IsDoubles, TeamAPlayer1ID, TeamAPlayer2ID, TeamAScore, TeamBPlayer1ID, TeamBPlayer2ID, TeamBScore, WinningTeam
+        SELECT Date, IsTournament, IsDoubles, TeamAPlayer1ID, TeamAPlayer2ID, TeamAScore, TeamBPlayer1ID, TeamBPlayer2ID, TeamBScore, WinningTeam
         FROM matches
         WHERE MatchID = ?
     """, (match_id_int,))
