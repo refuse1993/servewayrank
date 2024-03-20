@@ -1332,8 +1332,7 @@ def page_toto_generator():
                                     bet_team = 'A' if selected_team == 'Team A' else 'B'
                                     add_toto_betting_log(conn, (match_id, bet_team, player_id, betting_points))
                                     st.success(f"{selected_player}님이 {betting_points} 포인트로 {selected_team}에 베팅하셨습니다.")
-                                    print(int(player_points.get(player_id)))
-                                    #st.experimental_rerun()
+                                    st.experimental_rerun()
                                 else:
                                     st.error("가지고 있는 포인트보다 많이 베팅할 수 없습니다.")
                             else:
