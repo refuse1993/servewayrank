@@ -602,19 +602,45 @@ def add_toto_match(conn, match_details):
     """, match_details)
     conn.commit()
     
-    # 팀 A와 팀 B에 기본 배당금 추가
+    # 팀 A와 팀 B의 포인트 가져오기
+    team_a_player1_id, team_a_player2_id = match_details[3], match_details[4]
+    team_b_player1_id, team_b_player2_id = match_details[5], match_details[6]
+    
+    cursor.execute("SELECT Experience FROM Players WHERE PlayerID IN (?, ?)",
+                   (team_a_player1_id, team_a_player2_id))
+    player_points_a = cursor.fetchall()
+    
+    cursor.execute("SELECT Experience FROM Players WHERE PlayerID IN (?, ?)",
+                   (team_b_player1_id, team_b_player2_id))
+    player_points_b = cursor.fetchall()
+    
+    # 팀 A와 팀 B의 포인트 합산
+    team_a_points = sum(player[0] for player in player_points_a)
+    team_b_points = sum(player[0] for player in player_points_b)
+    
+    # 팀 A와 팀 B의 인원 수 계산
+    team_a_count = len(player_points_a)
+    team_b_count = len(player_points_b)
+    
+    # 팀 A와 팀 B의 평균 포인트 계산
+    avg_points_a = team_a_points / team_a_count
+    avg_points_b = team_b_points / team_b_count
+    
+    # 팀 A와 팀 B의 기본 배당금 설정
     match_id = cursor.lastrowid  # 새로 추가된 경기의 ID를 가져옴
-    default_bet_amount = 50  # 기본 배당금 설정
+    default_bet_amount_a = round((avg_points_a / (avg_points_a + avg_points_b)) * 200)
+    default_bet_amount_b = round((avg_points_b / (avg_points_a + avg_points_b)) * 200)
+    
     cursor.execute("""
         INSERT INTO toto_bets (match_id, bet_team, player_id, bet_amount, active)
         VALUES (?, ?, ?, ?, ?)
-    """, (match_id, 'A', 0, default_bet_amount, 1))  # 팀 A에 배당금 추가
+    """, (match_id, 'A', 0, default_bet_amount_a, 1))  # 팀 A에 배당금 추가
     cursor.execute("""
         INSERT INTO toto_bets (match_id, bet_team, player_id, bet_amount, active)
         VALUES (?, ?, ?, ?, ?)
-    """, (match_id, 'B', 0, default_bet_amount, 1))  # 팀 B에 배당금 추가
+    """, (match_id, 'B', 0, default_bet_amount_b, 1))  # 팀 B에 배당금 추가
     conn.commit()
-
+    
 # 배당률 계산 함수
 def calculate_odds(bet_data, total_winning_amount):
     odds = {}
@@ -682,7 +708,7 @@ def generate_rewards(conn, toto_id, team_a_score=None, team_b_score=None):
             # 이긴 팀에 베팅한 총액이 0보다 큰 경우에만 보상 계산
             if total_winning_bets > 0:
                 ratio = bet_amount / total_winning_bets
-                reward = round(ratio * total_betting_amount, 2)
+                reward = int(ratio * total_betting_amount) - bet_amount
         else:
             reward = -bet_amount  # 진 팀에 베팅한 경우, 베팅 금액만큼 손실
 
@@ -706,6 +732,34 @@ def generate_rewards(conn, toto_id, team_a_score=None, team_b_score=None):
     update_toto_match(conn, match_details, winning_team)
         
     conn.commit()
+
+def calculate_player_toto_stats(conn,player_id):
+    cursor = conn.cursor()
+    player_id_int = int(player_id)
+    # 플레이어의 토토 승리 수 조회
+    cursor.execute("SELECT COUNT(*) FROM toto_bets WHERE player_id = ? AND rewards > 0", (player_id_int,))
+    wins = cursor.fetchone()[0]
+    if wins is None:
+        wins = 0
+
+    # 플레이어의 토토 패배 수 조회
+    cursor.execute("SELECT COUNT(*) FROM toto_bets WHERE player_id = ? AND rewards < 0", (player_id_int,))
+    losses = cursor.fetchone()[0]
+    if losses is None:
+        losses = 0
+
+    total_matches = wins + losses
+
+    # 플레이어의 총 수익 계산
+    cursor.execute("SELECT SUM(rewards) FROM toto_bets WHERE player_id = ?", (player_id_int,))
+    total_rewards = cursor.fetchone()[0]
+    if total_rewards is None:
+        total_rewards = 0
+
+    # 플레이어의 토토 승률 계산
+    toto_rate = round(wins / total_matches * 100) if total_matches > 0 else 0
+
+    return toto_rate, total_rewards
 
 def display_completed_toto_rewards(conn, match_id):
     cursor = conn.cursor()
@@ -964,7 +1018,8 @@ def page_view_players():
             show_doubles = match_option == '복식'
             show_singles = match_option == '단식'
             show_all = match_option == '전체'
-        
+            
+        toto_rate, total_rewards = calculate_player_toto_stats(conn, selected_id)
         matches = get_player_matches(conn, selected_id)
         
         if matches:
@@ -1011,6 +1066,15 @@ def page_view_players():
                     .highlight {
                         font-weight: bold;
                         color: #4caf50;
+                    }
+                    .highlight-toto {
+                        font-weight: bold;
+                        color: #00FFFF;
+                    }
+                    .info-text-toto {
+                        color: #333333;
+                        font-size: 16px;
+                        margin: 0;
                     }
                    .match-info {
                         font-family: Arial, sans-serif;
@@ -1088,7 +1152,7 @@ def page_view_players():
             """, unsafe_allow_html=True)
 
             # 경기 정보 및 결과 표시
-            col1, col2, col3 = st.columns(3)
+            col1, col2, col3, col4 = st.columns(4)
 
             with col1:
                 st.markdown(f"""
@@ -1112,6 +1176,13 @@ def page_view_players():
                         <p class='info-text'>복식 경기: <span class='highlight'>{len(doubles_matches)}</span></p>
                         <p class='info-text'>승리: <span class='highlight'>{doubles_wins}승</span>, 패배: <span class='highlight'>{len(doubles_matches) - doubles_wins}패</span></p>
                         <p class='info-text'>승률: <span class='highlight'>{doubles_win_rate * 100:.2f}%</span></p>
+                    </div>
+                """, unsafe_allow_html=True)
+            with col4:
+                st.markdown(f"""
+                    <div class='info-box'>
+                        <p class='info-text'>토토 승률: <span class='highlight-toto'>{toto_rate}%</span></p>
+                        <p class='info-text'>토토 수익: <span class='highlight-toto'>{total_rewards} Point</span></p>
                     </div>
                 """, unsafe_allow_html=True)
 
@@ -2626,7 +2697,6 @@ def page_explain():
         """, unsafe_allow_html=True)
     
 def main_page():
-
     st.markdown("""
         <style>
             .welcome-text {
