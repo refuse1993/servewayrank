@@ -595,17 +595,39 @@ def add_toto_match(conn, match_details):
     """, match_details)
     conn.commit()
     
-    # 팀 A와 팀 B에 기본 배당금 추가
+    # 팀 A와 팀 B의 포인트 가져오기
+    team_a_player1_id, team_a_player2_id = match_details[3], match_details[4]
+    team_b_player1_id, team_b_player2_id = match_details[5], match_details[6]
+    
+    cursor.execute("SELECT Experience FROM Players WHERE PlayerID IN (?, ?, ?, ?)",
+                   (team_a_player1_id, team_a_player2_id, team_b_player1_id, team_b_player2_id))
+    player_points = cursor.fetchall()
+    
+    # 팀 A와 팀 B의 포인트 합산
+    team_a_points = player_points[0][0] + (player_points[1][0] if match_details[2] else 0)
+    team_b_points = player_points[2][0] + (player_points[3][0] if match_details[2] else 0)
+    
+    # 팀 A와 팀 B의 인원 수 계산
+    team_a_count = 2 if match_details[2] else 1
+    team_b_count = 2 if match_details[2] else 1
+    
+    # 팀 A와 팀 B의 평균 포인트 계산
+    avg_points_a = team_a_points / team_a_count
+    avg_points_b = team_b_points / team_b_count
+    
+    # 팀 A와 팀 B의 기본 배당금 설정
     match_id = cursor.lastrowid  # 새로 추가된 경기의 ID를 가져옴
-    default_bet_amount = 50  # 기본 배당금 설정
+    default_bet_amount_a = (avg_points_a / (avg_points_a + avg_points_b)) * 200 if match_details[2] else 100
+    default_bet_amount_b = (avg_points_b / (avg_points_a + avg_points_b)) * 200 if match_details[2] else 100
+    
     cursor.execute("""
         INSERT INTO toto_bets (match_id, bet_team, player_id, bet_amount, active)
         VALUES (?, ?, ?, ?, ?)
-    """, (match_id, 'A', 0, default_bet_amount, 1))  # 팀 A에 배당금 추가
+    """, (match_id, 'A', 0, default_bet_amount_a, 1))  # 팀 A에 배당금 추가
     cursor.execute("""
         INSERT INTO toto_bets (match_id, bet_team, player_id, bet_amount, active)
         VALUES (?, ?, ?, ?, ?)
-    """, (match_id, 'B', 0, default_bet_amount, 1))  # 팀 B에 배당금 추가
+    """, (match_id, 'B', 0, default_bet_amount_b, 1))  # 팀 B에 배당금 추가
     conn.commit()
 
 # 배당률 계산 함수
