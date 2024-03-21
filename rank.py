@@ -735,26 +735,31 @@ def generate_rewards(conn, toto_id, team_a_score=None, team_b_score=None):
 
 def calculate_player_toto_stats(conn,player_id):
     cursor = conn.cursor()
-    
-    # 특정 플레이어의 승리 수, 패배 수, 총 배당금 계산
-    cursor.execute("""
-        SELECT
-            SUM(CASE WHEN rewards > 0 THEN 1 ELSE 0 END) AS wins,
-            SUM(CASE WHEN rewards < 0 THEN 1 ELSE 0 END) AS losses,
-            SUM(rewards) AS total_rewards
-        FROM
-            toto_bets
-        WHERE
-            player_id = ?
-    """, (player_id,))
-    player_stats = cursor.fetchone()
-    
-    # 특정 플레이어의 승률 계산
-    wins, losses, total_rewards = player_stats
+
+    # 플레이어의 토토 승리 수 조회
+    cursor.execute("SELECT COUNT(*) FROM toto_bets WHERE player_id = ? AND rewards > 0", (player_id,))
+    wins = cursor.fetchone()[0]
+    if wins is None:
+        wins = 0
+
+    # 플레이어의 토토 패배 수 조회
+    cursor.execute("SELECT COUNT(*) FROM toto_bets WHERE player_id = ? AND rewards < 0", (player_id,))
+    losses = cursor.fetchone()[0]
+    if losses is None:
+        losses = 0
+
     total_matches = wins + losses
-    win_rate = (wins / total_matches) * 100 if total_matches > 0 else 0
-    
-    return win_rate, total_rewards
+
+    # 플레이어의 총 수익 계산
+    cursor.execute("SELECT SUM(rewards) FROM toto_bets WHERE player_id = ?", (player_id,))
+    total_rewards = cursor.fetchone()[0]
+    if total_rewards is None:
+        total_rewards = 0
+
+    # 플레이어의 토토 승률 계산
+    toto_rate = wins / total_matches * 100 if total_matches > 0 else 0
+
+    return toto_rate, total_rewards
 
 def display_completed_toto_rewards(conn, match_id):
     cursor = conn.cursor()
