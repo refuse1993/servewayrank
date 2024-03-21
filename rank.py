@@ -1181,8 +1181,8 @@ def page_view_players():
             with col4:
                 st.markdown(f"""
                     <div class='info-box'>
-                        <p class='info-text-toto'>토토 승률: <span class='highlight-toto'>{toto_rate * 100:.2f}%</span></p>
-                        <p class='info-text-toto'>토토 수익: <span class='highlight-toto'>{total_rewards}</span></p>
+                        <p class='info-text'>토토 승률: <span class='highlight-toto'>{toto_rate * 100:.2f}%</span></p>
+                        <p class='info-text'>토토 수익: <span class='highlight-toto'>{total_rewards}</span></p>
                     </div>
                 """, unsafe_allow_html=True)
 
