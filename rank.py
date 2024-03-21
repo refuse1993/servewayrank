@@ -733,6 +733,29 @@ def generate_rewards(conn, toto_id, team_a_score=None, team_b_score=None):
         
     conn.commit()
 
+def calculate_player_toto_stats(conn,player_id):
+    cursor = conn.cursor()
+    
+    # 특정 플레이어의 승리 수, 패배 수, 총 배당금 계산
+    cursor.execute("""
+        SELECT
+            SUM(CASE WHEN rewards > 0 THEN 1 ELSE 0 END) AS wins,
+            SUM(CASE WHEN rewards < 0 THEN 1 ELSE 0 END) AS losses,
+            SUM(rewards) AS total_rewards
+        FROM
+            toto_bets
+        WHERE
+            player_id = ?
+    """, (player_id,))
+    player_stats = cursor.fetchone()
+    
+    # 특정 플레이어의 승률 계산
+    wins, losses, total_rewards = player_stats
+    total_matches = wins + losses
+    win_rate = (wins / total_matches) * 100 if total_matches > 0 else 0
+    
+    return win_rate, total_rewards
+
 def display_completed_toto_rewards(conn, match_id):
     cursor = conn.cursor()
     # 해당 match_id의 모든 베팅을 조회하되, 경기가 종료되었고 reward가 0보다 큰 베팅만 필터링합니다.
@@ -990,7 +1013,8 @@ def page_view_players():
             show_doubles = match_option == '복식'
             show_singles = match_option == '단식'
             show_all = match_option == '전체'
-        
+            
+        toto_rate, total_rewards = calculate_player_toto_stats(conn, selected_id)
         matches = get_player_matches(conn, selected_id)
         
         if matches:
@@ -1037,6 +1061,15 @@ def page_view_players():
                     .highlight {
                         font-weight: bold;
                         color: #4caf50;
+                    }
+                    .highlight-toto {
+                        font-weight: bold;
+                        color: #00FFFF;
+                    }
+                    .info-text-toto {
+                        color: #333333;
+                        font-size: 16px;
+                        margin: 0;
                     }
                    .match-info {
                         font-family: Arial, sans-serif;
@@ -1114,7 +1147,7 @@ def page_view_players():
             """, unsafe_allow_html=True)
 
             # 경기 정보 및 결과 표시
-            col1, col2, col3 = st.columns(3)
+            col1, col2, col3, col4 = st.columns(4)
 
             with col1:
                 st.markdown(f"""
@@ -1138,6 +1171,13 @@ def page_view_players():
                         <p class='info-text'>복식 경기: <span class='highlight'>{len(doubles_matches)}</span></p>
                         <p class='info-text'>승리: <span class='highlight'>{doubles_wins}승</span>, 패배: <span class='highlight'>{len(doubles_matches) - doubles_wins}패</span></p>
                         <p class='info-text'>승률: <span class='highlight'>{doubles_win_rate * 100:.2f}%</span></p>
+                    </div>
+                """, unsafe_allow_html=True)
+            with col4:
+                st.markdown(f"""
+                    <div class='info-box'>
+                        <p class='info-text-toto'>토토 승률: <span class='highlight-toto'>{toto_rate * 100:.2f}%</span></p>
+                        <p class='info-text-toto'>토토 수익: <span class='highlight-toto'>{total_rewards}</span></p>
                     </div>
                 """, unsafe_allow_html=True)
 
