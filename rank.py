@@ -628,8 +628,8 @@ def add_toto_match(conn, match_details):
     
     # 팀 A와 팀 B의 기본 배당금 설정
     match_id = cursor.lastrowid  # 새로 추가된 경기의 ID를 가져옴
-    default_bet_amount_a = round((avg_points_a / (avg_points_a + avg_points_b)) * 200 if match_details[2] else 100)
-    default_bet_amount_b = round((avg_points_b / (avg_points_a + avg_points_b)) * 200 if match_details[2] else 100)
+    default_bet_amount_a = round((avg_points_a / (avg_points_a + avg_points_b)) * 200)
+    default_bet_amount_b = round((avg_points_b / (avg_points_a + avg_points_b)) * 200)
     
     cursor.execute("""
         INSERT INTO toto_bets (match_id, bet_team, player_id, bet_amount, active)
