@@ -2144,6 +2144,7 @@ def page_view_ranking():
     else:
         st.error("랭킹 정보를 가져오는 데 실패했습니다.")
 
+
 def page_generate_game():    
     st.markdown("""
         <style>
@@ -2524,7 +2525,7 @@ def page_setting():
     password = st.text_input("패스워드 입력", type="password")
 
     # Dropdown to select a table
-    table_name = st.selectbox("초기화 할 테이블", ["Players", "Matches", "ExperienceHistory", "EquipmentHistory"])
+    table_name = st.selectbox("초기화 할 테이블", ["Players", "Matches", "ExperienceHistory", "EquipmentHistory", "toto_bets"])
 
     # 패스워드 검증
     correct_password = "1626"  # 실제 패스워드로 변경 필요
