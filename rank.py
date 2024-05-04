@@ -3085,8 +3085,8 @@ def main():
     menu_items = {
         "LHㄷH.GG?":page_explain,
         "랭킹": page_view_ranking,
-        "복식전적": page_view_double_ranking,
-        "전적": page_view_players,
+        "개인 전적": page_view_players,
+        "듀오 전적": page_view_double_ranking,
         "토토": page_toto_generator,
         "경기 생성" :page_generate_game,
         "경기 결과 추가": page_add_match,
