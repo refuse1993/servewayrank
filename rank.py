@@ -2313,11 +2313,13 @@ def page_view_double_ranking():
                         font-weight: bold;
                         font-style: italic;
                     }}
-                    .player-name {{
+                    .player-name-1 {{
                         font-size: 18px;
                         color: #ffffff;
                         font-weight: bold;
                         margin-top: 5px;
+                        margin-left: 5px;
+                        margin-right: 5px;
                     }}
                 </style>
             """, unsafe_allow_html=True)
@@ -2330,9 +2332,9 @@ def page_view_double_ranking():
                         <div class="player-title">승률</div>
                         <div class="player-name" style="color: {win_rate_color};">{win_rate:.0f}%</div></div>
                     <div class="player-info-1">
-                        <div class="player-name">{players_list[top_team[1]]}</div>
+                        <div class="player-name-1">{players_list[top_team[1]]}</div>
                         <div class="player-title">with</div>
-                        <div class="player-name">{players_list[top_team[0]]}</div>
+                        <div class="player-name-1">{players_list[top_team[0]]}</div>
                     </div>
                     <div class="player-level-box">{top_record["wins"]}승 / {top_record["losses"]}패</div>
                 </div>
