@@ -2215,9 +2215,7 @@ def page_view_double_ranking():
         players_df = pd.read_sql(player_query, conn)
         players_list = players_df.set_index('PlayerID')['Name'].to_dict()
 
-        # 플레이어 선택
-        selected_player_id = st.selectbox("플레이어 선택:", list(players_list.keys()), format_func=lambda x: players_list[x])
-
+        
         # 데이터베이스에서 데이터 가져오기
         match_query = """
         SELECT TeamAPlayer1ID, TeamAPlayer2ID, TeamBPlayer1ID, TeamBPlayer2ID, WinningTeam
@@ -2248,9 +2246,136 @@ def page_view_double_ranking():
             else:
                 partners[losers] = {'losses': 1, 'wins': 0}
 
+        best_combinations = sorted(partners.items(), key=lambda x: (x[1]['wins'] / (x[1]['wins'] + x[1]['losses']), x[1]['wins'] + x[1]['losses']), reverse=True)[:3]
+        top_team, top_record = best_combinations[0]
+        
+        st.markdown(f"""
+            <div style="background-color: #333333;
+                        color: #ffffff;
+                        padding: 5px;
+                        border: 1px solid #444444;
+                        border-radius: 5px;
+                        font-size: 18px;
+                        text-align: center;
+                        margin-bottom: 10px;">
+                <strong>BEST 3 DUO</strong>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        # 최고의 복식 조합 표시
+        for index, (top_team, top_record) in enumerate(best_combinations, start=1):
+            background = get_background(index)  # 이전에 정의된 배경색 함수를 사용
+            win_rate = (top_record['wins'] / (top_record['wins'] + top_record['losses'])) * 100
+            win_rate_color = "#FFD700" if win_rate >= 50 else "#FF6347"  # 금색 또는 토마토색 사용
+            total_games = top_record['wins'] + top_record['losses']  # 총 경기 수 계산
+            st.markdown(f"""
+                <style>
+                    .player-level-box {{
+                        display: inline-block;
+                        padding: 5px 10px;
+                        border-radius: 10px;
+                        background-color: #333333;
+                        color: #ffffff;
+                        font-weight: bold;
+                        text-align: center;
+                    }}
+                    .ranking-row-{index} {{
+                        display: flex;
+                        align-items: center;
+                        margin-bottom: 10px;
+                        padding: 10px;
+                        border-radius: 10px;
+                        background: {background};
+                        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                    }}
+                    .win-rate {{
+                        font-size: 24px; /* 큰 글꼴 크기 */
+                        font-weight: bold;
+                        padding: 10px;
+                        color: {win_rate_color};
+                    }}
+                    .player-info {{
+                        flex-grow: 1;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        margin-left: 20px;
+                    }}
+                    .player-info-1 {{
+                        flex-grow: 1;
+                        display: flex;
+                        align-items: center;
+                        margin-left: 20px;
+                    }}
+                    .player-title {{
+                        font-size: 16px;
+                        color: #F0E68C;
+                        font-weight: bold;
+                        font-style: italic;
+                    }}
+                    .player-name {{
+                        font-size: 18px;
+                        color: #ffffff;
+                        font-weight: bold;
+                        margin-top: 5px;
+                    }}
+                </style>
+            """, unsafe_allow_html=True)
+            
+            # HTML과 CSS를 사용하여 커스텀 스타일링 적용
+            st.markdown(f"""
+                <div class="ranking-row-{index}">
+                    <div class="player-level-box">{total_games} 게임</div>
+                    <div class="player-info">
+                        <div class="player-title">승률</div>
+                        <div class="player-name" style="color: {win_rate_color};">{win_rate:.0f}%</div></div>
+                    <div class="player-info-1">
+                        <div class="player-name">{players_list[top_team[1]]}</div>
+                        <div class="player-title">with</div>
+                        <div class="player-name">{players_list[top_team[0]]}</div>
+                    </div>
+                    <div class="player-level-box">{top_record["wins"]}승 / {top_record["losses"]}패</div>
+                </div>
+            """, unsafe_allow_html=True)
+        
+        st.markdown(f"""
+            <div style="background-color: #333333;
+                        color: #ffffff;
+                        padding: 5px;
+                        border: 1px solid #444444;
+                        border-radius: 5px;
+                        font-size: 18px;
+                        text-align: center;
+                        margin-top: 10px;
+                        margin-bottom: 10px;">
+                <strong>SELECT PLAYER</strong>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        # 플레이어 선택
+        selected_player_id = st.selectbox("참가자 선택:", list(players_list.keys()), format_func=lambda x: players_list[x])
+
+        # CSS를 사용하여 라디오 버튼을 가로로 배치
+        st.markdown("""
+        <style>
+        div.row-widget.stRadio > div{flex-direction:row;}
+        </style>
+        """, unsafe_allow_html=True)
+
+        # 라디오 버튼 생성
+        sort_option = st.radio(
+            "정렬 옵션 선택:",
+            ('승률순', '총 게임 수 순')
+        )
+        
         # 선택된 플레이어가 포함된 파트너 조합만 필터링 및 정렬
         selected_player_partners = {team: rec for team, rec in partners.items() if selected_player_id in team}
         sorted_partners = sorted(selected_player_partners.items(), key=lambda x: x[1]['wins'] / (x[1]['wins'] + x[1]['losses']), reverse=True)
+
+        if sort_option == '승률순':
+            sorted_partners = sorted(selected_player_partners.items(), key=lambda x: x[1]['wins'] / (x[1]['wins'] + x[1]['losses']), reverse=True)
+        else:
+            sorted_partners = sorted(selected_player_partners.items(), key=lambda x: x[1]['wins'] + x[1]['losses'], reverse=True)
 
         # 승률 및 성적 출력
         for index, (team, record) in enumerate(sorted_partners):
