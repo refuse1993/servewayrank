@@ -273,6 +273,7 @@ def get_equiphistory(conn):
                 MAX(StringChangeDate) AS MaxStringDate
             FROM
                 EquipmentHistory
+            WHERE StringChangeDate != '<NA>'
             GROUP BY
                 PlayerID
         ),
@@ -282,6 +283,7 @@ def get_equiphistory(conn):
                 MAX(ShoeChangeDate) AS MaxShoeDate
             FROM
                 EquipmentHistory
+            WHERE ShoeChangeDate != '<NA>'
             GROUP BY
                 PlayerID
         ),
@@ -291,6 +293,7 @@ def get_equiphistory(conn):
                 MAX(RacketChangeDate) AS MaxRacketDate
             FROM
                 EquipmentHistory
+            WHERE RacketChangeDate != '<NA>'
             GROUP BY
                 PlayerID
         ),
