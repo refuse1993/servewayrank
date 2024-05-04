@@ -2248,7 +2248,13 @@ def page_view_double_ranking():
             else:
                 partners[losers] = {'losses': 1, 'wins': 0}
 
-        best_combinations = sorted(partners.items(), key=lambda x: (x[1]['wins'] / (x[1]['wins'] + x[1]['losses']), x[1]['wins'] + x[1]['losses']), reverse=True)[:3]
+        # 조합의 전체 게임 수 계산 및 필터링
+        for team, record in partners.items():
+            record['total_games'] = record['wins'] + record['losses']
+            record['win_rate'] = record['wins'] / record['total_games'] if record['total_games'] > 0 else 0
+            
+        filtered_combinations = {team: rec for team, rec in partners.items() if rec['total_games'] >= 5}
+        best_combinations = sorted(filtered_combinations.items(), key=lambda x: (x[1]['win_rate'], x[1]['total_games']), reverse=True)[:3]
         top_team, top_record = best_combinations[0]
         
         st.markdown(f"""
@@ -2263,6 +2269,24 @@ def page_view_double_ranking():
             </div>
         """, unsafe_allow_html=True)
         
+        st.markdown("""
+            <style>
+                .recommendation-box {
+                    background-color: #2a9d8f;  /* 적절한 배경색 설정 */
+                    color: #ffffff;  /* 텍스트 색상을 흰색으로 설정 */
+                    padding: 3px;
+                    border-radius: 10px;  /* 박스 모서리 둥글게 설정 */
+                    margin: 5px 0px;  /* 상하 마진 설정 */
+                    text-align: center;  /* 텍스트 중앙 정렬 */
+                    font-size: 8px;  /* 폰트 크기 설정 */
+                    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);  /* 그림자 효과 추가 */
+                }
+            </style>
+            <div class="recommendation-box">
+                ※ 5경기 이상 플레이한 DUO만 표시됩니다.
+            </div>
+            """, unsafe_allow_html=True)
+    
         st.markdown(f"""
                 <style>
                     .player-level-box {{
