@@ -2309,6 +2309,7 @@ def page_view_double_ranking():
                         margin-left: 20px;
                     }}
                     .player-title {{
+                        margin-top: 5px;
                         font-size: 8px;
                         color: #F0E68C;
                         font-weight: bold;
