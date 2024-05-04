@@ -904,7 +904,7 @@ def page_view_players():
                     color: #ffffff; /* 글자 색상 */
                     margin-left: 10px; /* Level 텍스트와 이미지 사이의 간격 */
                     margin-right: 20px; /* Level 텍스트와 타이틀 사이의 간격 */
-                    font-size: 22px; /* 글자 크기 */
+                    font-size: 18px; /* 글자 크기 */
                     font-weight: bold; /* 글자 굵기 */
                     text-shadow: 2px 2px 4px rgba(0,0,0,0.5); /* 텍스트 그림자 */
                     background: -webkit-linear-gradient(#fff, #fff); /* 텍스트 그라디언트 색상 */
@@ -912,7 +912,7 @@ def page_view_players():
                     -webkit-text-fill-color: transparent; /* 텍스트 그라디언트 색상을 위해 필요 */
                 }}
                 .player-title {{
-                    font-size: 24px;
+                    font-size: 18px;
                     color: #F0E68C; /* 은색 */
                     font-weight: bold; /* 볼드체 */
                     font-style: italic; /* 이탤릭체 */
@@ -928,7 +928,7 @@ def page_view_players():
         """, unsafe_allow_html=True)
 
         st.markdown(f"""<div class="player-info">
-                <img src="data:image/png;base64,{tier_image_base64}" style="width: 70px; height: 70px; object-fit: contain; border-radius: 50%;">
+                <img src="data:image/png;base64,{tier_image_base64}" style="width: 50px; height: 50px; object-fit: contain; border-radius: 50%;">
                 <div class="level-text">Level {selected_level}</div>
                 <div class="player-title">{selected_title}</div
                 >""", unsafe_allow_html=True)
