@@ -2056,12 +2056,12 @@ def page_view_ranking():
                     st.markdown(f"""
                         <style>
                             .win-rate {{
-                                font-size: 14px; /* 승률 글자 크기 */
+                                font-size: 12px; /* 승률 글자 크기 */
                                 font-weight: bold; /* 글꼴 굵기 */
                                 margin-right: 5px; /* 우측 마진 */
                             }}
                             .win-loss-stats {{
-                                font-size: 13px; /* 승패 글자 크기 조정 */
+                                font-size: 12px; /* 승패 글자 크기 조정 */
                                 color: #ffffff; /* 글자 색상 */
                                 font-weight: bold; /* 글꼴 굵기 */
                                 margin: 0 5px; /* 좌우 마진 조정 */
@@ -2074,6 +2074,7 @@ def page_view_ranking():
                                 color: #ffffff; /* 글자 색상 */
                                 font-weight: bold; /* 글꼴 굵기 */
                                 text-align: center; /* 텍스트 중앙 정렬 */
+                                font-size: 14px; /* 텍스트 중앙 정렬 */
                             }}
                             .ranking-row-{index} {{
                                 display: flex;
@@ -2085,8 +2086,8 @@ def page_view_ranking():
                                 box-shadow: 0 4px 6px rgba(0,0,0,0.1);
                             }}
                             .tier-image {{
-                                width: 40px;
-                                height: 40px;
+                                width: 30px;
+                                height: 30px;
                                 border-radius: 50%;
                                 margin-right: 10px;
                             }}
@@ -2102,14 +2103,14 @@ def page_view_ranking():
                                 margin-bottom: 12px; /* 아래쪽 마진 추가 */
                             }}
                             .player-title {{
-                                font-size: 13px;
+                                font-size: 10px;
                                 color: #F0E68C; /* 은색 */
                                 font-weight: bold; /* 볼드체 */
                                 font-style: italic; /* 이탤릭체 */
                                 animation: blinker 1s linear infinite; /* 번쩍번쩍 애니메이션 적용 */
                             }}
                             .ranking-number {{
-                                font-size: 26px; /* 랭킹 크기 */
+                                font-size: 16px; /* 랭킹 크기 */
                                 color: #ffffff; /* 랭킹 색상 */
                                 font-weight: bold; /* 글꼴 굵기 */
                                 margin-right: 10px;
@@ -2117,7 +2118,7 @@ def page_view_ranking():
                             .player-name {{
                                 flex-grow: 1; /* 이름이 차지하는 공간을 최대로 */
                                 margin: 0 10x; /* 좌우 마진 */
-                                font-size: 18px; /* 이름 크기 */
+                                font-size: 16px; /* 이름 크기 */
                                 color: #ffffff; /* 이름 색상 */
                                 font-weight: bold; /* 글꼴 굵기 */
                             }}
