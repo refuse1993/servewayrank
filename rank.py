@@ -1589,10 +1589,10 @@ def page_add_match():
                 col1, col2, col_vs, col3, col4 = st.columns([3, 2, 1, 2, 3])
 
                 with col1:
-                    team_a_player1_name = st.selectbox("Team A Player 1", list(player_options.keys()), key=f"team_a_p1_{i}")
+                    team_a_player1_name = st.selectbox("Team A Player 1", list(player_options.keys()), key=f"team_a_p1", index=0)
                     team_a_player1_id = player_options[team_a_player1_name]
                     if is_doubles:
-                        team_a_player2_name = st.selectbox("Team A Player 2", list(player_options.keys()), key=f"team_a_p2_{i}")
+                        team_a_player2_name = st.selectbox("Team A Player 2", list(player_options.keys()), key=f"team_a_p2", index=2)
                         team_a_player2_id = player_options[team_a_player2_name]
 
                 with col2:
@@ -1605,10 +1605,10 @@ def page_add_match():
                     team_b_score = st.number_input("Team B Score", min_value=0, value=0, key=f"team_b_score_{i}")
 
                 with col4:
-                    team_b_player1_name = st.selectbox("Team B Player 1", list(player_options.keys()), key=f"team_b_p1_{i}")
+                    team_b_player1_name = st.selectbox("Team B Player 1", list(player_options.keys()), key=f"team_b_p1", index=1)
                     team_b_player1_id = player_options[team_b_player1_name]
                     if is_doubles:
-                        team_b_player2_name = st.selectbox("Team B Player 2", list(player_options.keys()), key=f"team_b_p2_{i}")
+                        team_b_player2_name = st.selectbox("Team B Player 2", list(player_options.keys()), key=f"team_b_p2", index=3)
                         team_b_player2_id = player_options[team_b_player2_name]
                         
                 # 입력받은 경기 정보 저장
