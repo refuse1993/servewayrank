@@ -2258,7 +2258,7 @@ def page_view_double_ranking():
                         font-size: 18px;
                         text-align: center;
                         margin-bottom: 10px;">
-                <strong>BEST 3 DUO</strong>
+                <strong>BEST DUO 3</strong>
             </div>
         """, unsafe_allow_html=True)
         
@@ -2278,7 +2278,7 @@ def page_view_double_ranking():
                         color: #ffffff;
                         font-weight: bold;
                         text-align: center;
-                        font-size: 16px;
+                        font-size: 14px;
                     }}
                     .ranking-row-{index} {{
                         display: flex;
@@ -2309,7 +2309,7 @@ def page_view_double_ranking():
                         margin-left: 20px;
                     }}
                     .player-title {{
-                        font-size: 10px;
+                        font-size: 8px;
                         color: #F0E68C;
                         font-weight: bold;
                         font-style: italic;
