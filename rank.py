@@ -2276,10 +2276,10 @@ def page_view_double_ranking():
                     color: #ffffff;  /* 텍스트 색상을 흰색으로 설정 */
                     padding: 3px;
                     border-radius: 10px;  /* 박스 모서리 둥글게 설정 */
-                    margin: 5px 0px;  /* 상하 마진 설정 */
+                    margin-top: 5px;  /* 상하 마진 설정 */
                     text-align: center;  /* 텍스트 중앙 정렬 */
                     font-size: 8px;  /* 폰트 크기 설정 */
-                    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);  /* 그림자 효과 추가 */
+                    #box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);  /* 그림자 효과 추가 */
                 }
             </style>
             <div class="recommendation-box">
