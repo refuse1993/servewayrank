@@ -930,7 +930,8 @@ def page_view_players():
         st.markdown(f"""<div class="player-info">
                 <img src="data:image/png;base64,{tier_image_base64}" style="width: 70px; height: 70px; object-fit: contain; border-radius: 50%;">
                 <div class="level-text">Level {selected_level}</div>
-                <div class="player-title">{selected_title}</div>""", unsafe_allow_html=True)
+                <div class="player-title">{selected_title}</div
+                >""", unsafe_allow_html=True)
         
         st.markdown(f"""
             <div style="background-color: #333333;
@@ -2137,7 +2138,7 @@ def page_view_ranking():
                                 <div class="player-title">{title}</div>
                                 <div class="player-name">{name}</div>
                             </div>
-                            <div class="win-rate" style="color: {win_rate_color};">{total_win_rate * 100:.1f}%</div>
+                            <div class="win-rate" style="color: {win_rate_color};">{total_win_rate * 100:.0f}%</div>
                             <div class="win-loss-stats">{total_wins}승 / {total_matches - total_wins}패</div> <!-- 승패 수 표현 변경 -->
                             <div class="player-level-box">Level {player_level}</div> <!-- 레벨 박스화 및 스타일 적용 -->
                         </div>
