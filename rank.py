@@ -904,7 +904,7 @@ def page_view_players():
                     color: #ffffff; /* 글자 색상 */
                     margin-left: 10px; /* Level 텍스트와 이미지 사이의 간격 */
                     margin-right: 20px; /* Level 텍스트와 타이틀 사이의 간격 */
-                    font-size: 18px; /* 글자 크기 */
+                    font-size: 16px; /* 글자 크기 */
                     font-weight: bold; /* 글자 굵기 */
                     text-shadow: 2px 2px 4px rgba(0,0,0,0.5); /* 텍스트 그림자 */
                     background: -webkit-linear-gradient(#fff, #fff); /* 텍스트 그라디언트 색상 */
@@ -912,7 +912,7 @@ def page_view_players():
                     -webkit-text-fill-color: transparent; /* 텍스트 그라디언트 색상을 위해 필요 */
                 }}
                 .player-title {{
-                    font-size: 18px;
+                    font-size: 16px;
                     color: #F0E68C; /* 은색 */
                     font-weight: bold; /* 볼드체 */
                     font-style: italic; /* 이탤릭체 */
@@ -967,11 +967,11 @@ def page_view_players():
                 
                 # 증감 표시
                 plt.text(df_exp_history.index[i] + 1, df_exp_history['경험치'].iloc[i] + 0.02 * max(df_exp_history['경험치']),
-                        f"{symbol}{abs(diff)}", color=color, va='center', ha='center', fontdict={'weight': 'bold', 'size': 8})
+                        f"{symbol}{abs(diff)}", color=color, va='center', ha='center', fontdict={'weight': 'bold', 'size': 6})
 
                 # 현재 경험치 값 표시 (크고 화려하게)
                 plt.text(df_exp_history.index[i] + 1, df_exp_history['경험치'].iloc[i] + 0.045 * max(df_exp_history['경험치']),
-                        f"{df_exp_history['경험치'].iloc[i]}", color='blue', va='center', ha='center', fontdict={'weight': 'bold', 'size': 12})
+                        f"{df_exp_history['경험치'].iloc[i]}", color='blue', va='center', ha='center', fontdict={'weight': 'bold', 'size': 8})
 
             plt.xlabel('Point Change')
             plt.ylabel('Point')
