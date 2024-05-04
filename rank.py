@@ -2309,7 +2309,7 @@ def page_view_double_ranking():
                         align-items: center;
                         margin-left: 20px;
                     }}
-                    .player-title {{
+                    .player-title-1 {{
                         margin-top: 5px;
                         font-size: 8px;
                         color: #F0E68C;
@@ -2332,11 +2332,11 @@ def page_view_double_ranking():
                 <div class="ranking-row-{index}">
                     <div class="player-level-box">{total_games} 게임</div>
                     <div class="player-info">
-                        <div class="player-title">승률</div>
+                        <div class="player-title-1">승률</div>
                         <div class="player-name" style="color: {win_rate_color};">{win_rate:.0f}%</div></div>
                     <div class="player-info-1">
                         <div class="player-name-1">{players_list[top_team[1]]}</div>
-                        <div class="player-title">with</div>
+                        <div class="player-title-1">with</div>
                         <div class="player-name-1">{players_list[top_team[0]]}</div>
                     </div>
                     <div class="player-level-box">{top_record["wins"]}승 / {top_record["losses"]}패</div>
