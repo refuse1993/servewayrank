@@ -2351,14 +2351,13 @@ def page_view_double_ranking():
                         border-radius: 5px;
                         font-size: 18px;
                         text-align: center;
-                        margin-top: 10px;
-                        margin-bottom: 10px;">
+                        margin-top: 30px;">
                 <strong>SELECT PLAYER</strong>
             </div>
         """, unsafe_allow_html=True)
         
         # 플레이어 선택
-        selected_player_id = st.selectbox("참가자 선택:", list(players_list.keys()), format_func=lambda x: players_list[x])
+        selected_player_id = st.selectbox("", list(players_list.keys()), format_func=lambda x: players_list[x])
 
         # CSS를 사용하여 라디오 버튼을 가로로 배치
         st.markdown("""
