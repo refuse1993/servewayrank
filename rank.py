@@ -2341,7 +2341,6 @@ def page_view_double_ranking():
                     .ranking-row-{index} {{
                         display: flex;
                         align-items: center;
-                        margin-bottom: 10px;
                         padding: 10px;
                         border-radius: 10px;
                         background: {background};
