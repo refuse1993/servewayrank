@@ -870,7 +870,7 @@ def page_view_players():
             margin-bottom: 20px;
         }
         </style>
-        <div class="record-header">RECORD</div>
+        <div class="record-header">PLAYER RECORD</div>
     """, unsafe_allow_html=True)
     
     conn = create_connection('fsi_rank.db')
@@ -2164,7 +2164,7 @@ def page_view_double_ranking():
             margin-bottom: 20px;
         }
         </style>
-        <div class="ranking-header">DOUBLE RATE</div>
+        <div class="ranking-header">DOUBLE RECORD</div>
     """, unsafe_allow_html=True)
 
     # 랭킹에 따른 배경색 설정
