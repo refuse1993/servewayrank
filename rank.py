@@ -2334,7 +2334,7 @@ def page_view_double_ranking():
                     <div class="player-level-box">{total_games} 게임</div>
                     <div class="player-info">
                         <div class="player-title-1">승률</div>
-                        <div class="player-name" style="color: {win_rate_color};">{win_rate:.0f}%</div></div>
+                        <div class="player-name-1" style="color: {win_rate_color};">{win_rate:.0f}%</div></div>
                     <div class="player-info-1">
                         <div class="player-name-1">{players_list[top_team[1]]}</div>
                         <div class="player-title-1">with</div>
