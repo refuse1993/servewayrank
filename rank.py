@@ -2265,7 +2265,7 @@ def page_view_double_ranking():
         
         # 최고의 복식 조합 표시
         for index, (top_team, top_record) in enumerate(best_combinations, start=1):
-            background = get_background(index)  # 이전에 정의된 배경색 함수를 사용
+            background = get_background(index-1)  # 이전에 정의된 배경색 함수를 사용
             win_rate = (top_record['wins'] / (top_record['wins'] + top_record['losses'])) * 100
             win_rate_color = "#FFD700" if win_rate >= 50 else "#FF6347"  # 금색 또는 토마토색 사용
             total_games = top_record['wins'] + top_record['losses']  # 총 경기 수 계산
