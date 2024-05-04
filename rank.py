@@ -2955,7 +2955,7 @@ def main():
     menu_items = {
         "LHㄷH.GG?":page_explain,
         "랭킹": page_view_ranking,
-        "복식랭킹": page_view_double_ranking,
+        "복식전적": page_view_double_ranking,
         "전적": page_view_players,
         "토토": page_toto_generator,
         "경기 생성" :page_generate_game,
