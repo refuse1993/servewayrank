@@ -2144,6 +2144,192 @@ def page_view_ranking():
     else:
         st.error("랭킹 정보를 가져오는 데 실패했습니다.")
 
+def page_view_double_ranking():
+    st.markdown("""
+        <style>
+        .ranking-header {
+            font-size: 24px;
+            font-weight: bold;
+            background: linear-gradient(to right, #bdc3c7, #2c3e50);  # 회색에서 검은색으로 변하는 그라데이션
+            -webkit-background-clip: text;
+            color: #FFFFFF;  # 텍스트 색상을 투명하게 설정하여 배경 그라데이션을 보이게 함
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        </style>
+        <div class="ranking-header">Double RANKING</div>
+    """, unsafe_allow_html=True)
+
+    # 랭킹에 따른 배경색 설정
+    def get_background(index):
+        if index == 0:  # 1등
+            return "linear-gradient(to right, #cc2b5e, #753a88)"
+        elif index == 1:  # 2등
+            return "linear-gradient(to right, #2193b0, #6dd5ed)"
+        elif index == 2:  # 3등
+            return "linear-gradient(to right, #4A9C1A, #56ab2f)"
+        else:  # 그 외
+            return "linear-gradient(to right, #bdc3c7, #2c3e50)"
+
+    conn = create_connection('fsi_rank.db')
+    
+    if conn is not None:
+        cur = conn.cursor()
+        
+        # Streamlit 페이지 설정
+        st.title('복식 파트너별 승률')
+
+        # 스타일링
+        st.markdown("""
+            <style>
+            .stats-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 10px;
+                border-radius: 10px;
+                background: linear-gradient(to right, #6a3093, #a044ff);
+                margin-bottom: 5px;
+                color: white;
+            }
+            .win-rate {
+                font-size: 16px;
+                font-weight: bold;
+                color: #ffffff;
+            }
+            .partner-name {
+                font-size: 18px;
+                font-weight: bold;
+            }
+            .win-loss {
+                font-size: 14px;
+                font-weight: bold;
+            }
+            </style>
+        """, unsafe_allow_html=True)
+
+        # 플레이어 목록 가져오기
+        player_query = "SELECT PlayerID, Name FROM players"
+        players_df = pd.read_sql(player_query, conn)
+        players_list = players_df.set_index('PlayerID')['Name'].to_dict()
+
+        # 플레이어 선택
+        selected_player_id = st.selectbox("플레이어 선택:", list(players_list.keys()), format_func=lambda x: players_list[x])
+
+        # 데이터베이스에서 데이터 가져오기
+        match_query = """
+        SELECT TeamAPlayer1ID, TeamAPlayer2ID, TeamBPlayer1ID, TeamBPlayer2ID, WinningTeam
+        FROM matches
+        WHERE IsDoubles = 1
+        """
+        matches = pd.read_sql(match_query, conn)
+
+
+
+                    
+        # 파트너 조합별 승리 계산
+        partners = {}
+        for _, row in matches.iterrows():
+            team_a = tuple(sorted([row['TeamAPlayer1ID'], row['TeamAPlayer2ID']]))
+            team_b = tuple(sorted([row['TeamBPlayer1ID'], row['TeamBPlayer2ID']]))
+            winner = 'A' if row['WinningTeam'] == 'A' else 'B'
+            
+            if winner == 'A':
+                winners, losers = team_a, team_b
+            else:
+                winners, losers = team_b, team_a
+            
+            if winners in partners:
+                partners[winners]['wins'] += 1
+            else:
+                partners[winners] = {'wins': 1, 'losses': 0}
+            
+            if losers in partners:
+                partners[losers]['losses'] += 1
+            else:
+                partners[losers] = {'losses': 1, 'wins': 0}
+
+        # 선택된 플레이어가 포함된 파트너 조합만 필터링 및 정렬
+        selected_player_partners = {team: rec for team, rec in partners.items() if selected_player_id in team}
+        sorted_partners = sorted(selected_player_partners.items(), key=lambda x: x[1]['wins'] / (x[1]['wins'] + x[1]['losses']), reverse=True)
+
+        
+        # 승률 및 성적 출력
+        for index, (team, record) in enumerate(sorted_partners):
+                           
+            win_rate = (record['wins'] / (record['wins'] + record['losses'])) * 100
+            # 승률에 따른 색상 조정
+            win_rate_color = "#FFD700" if win_rate >= 50 else "#FF6347"  # 금색 또는 토마토색 사용
+
+            # 페이지 스타일 설정 (각 랭킹마다 다른 배경색 적용)
+            background = get_background(index)  # 이전에 정의된 배경색 함수를 사용
+            
+            st.markdown(f"""
+                <style>
+                    .player-level-box {{
+                        display: inline-block;
+                        padding: 5px 10px;
+                        border-radius: 10px;
+                        background-color: #333333;
+                        color: #ffffff;
+                        font-weight: bold;
+                        text-align: center;
+                    }}
+                    .ranking-row-{index} {{
+                        display: flex;
+                        align-items: center;
+                        margin-bottom: 10px;
+                        padding: 10px;
+                        border-radius: 10px;
+                        background: {background};
+                        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                    }}
+                    .win-rate {{
+                        font-size: 24px; /* 큰 글꼴 크기 */
+                        font-weight: bold;
+                        color: {win_rate_color};
+                    }}
+                    .player-info {{
+                        flex-grow: 1;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        margin-left: 20px;
+                    }}
+                    .player-title {{
+                        font-size: 16px;
+                        color: #F0E68C;
+                        font-weight: bold;
+                        font-style: italic;
+                    }}
+                    .player-name {{
+                        font-size: 18px;
+                        color: #ffffff;
+                        font-weight: bold;
+                        margin-top: 5px;
+                    }}
+                </style>
+            """, unsafe_allow_html=True)
+            
+            partner_name = players_list[team[0] if team[1] == selected_player_id else team[1]]
+            
+            # HTML과 CSS를 사용하여 커스텀 스타일링 적용
+            st.markdown(f"""
+                <div class="ranking-row-{index}">
+                    <div class="win-rate" style="color: {win_rate_color};">{win_rate:.0f}%</div>
+                    <div class="player-info">
+                        <div class="player-title">with</div>
+                        <div class="player-name">{partner_name}</div>
+                    </div>
+                    <div class="player-level-box">{record["wins"]}승 / {record["losses"]}패</div>
+                </div>
+            """, unsafe_allow_html=True)
+
+
+        # 데이터베이스 연결 종료
+        conn.close()
 
 def page_generate_game():    
     st.markdown("""
@@ -2772,6 +2958,7 @@ def main():
     menu_items = {
         "LHㄷH.GG?":page_explain,
         "랭킹": page_view_ranking,
+        "복식랭킹": page_view_double_ranking,
         "전적": page_view_players,
         "토토": page_toto_generator,
         "경기 생성" :page_generate_game,
