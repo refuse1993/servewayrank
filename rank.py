@@ -2311,7 +2311,7 @@ def page_view_double_ranking():
                     }}
                     .player-title-1 {{
                         margin-top: 5px;
-                        font-size: 8px;
+                        font-size: 12px;
                         color: #F0E68C;
                         font-weight: bold;
                         font-style: italic;
