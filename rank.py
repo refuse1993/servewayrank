@@ -2278,6 +2278,7 @@ def page_view_double_ranking():
                         color: #ffffff;
                         font-weight: bold;
                         text-align: center;
+                        font-size: 16px;
                     }}
                     .ranking-row-{index} {{
                         display: flex;
@@ -2308,7 +2309,7 @@ def page_view_double_ranking():
                         margin-left: 20px;
                     }}
                     .player-title {{
-                        font-size: 13px;
+                        font-size: 10px;
                         color: #F0E68C;
                         font-weight: bold;
                         font-style: italic;
