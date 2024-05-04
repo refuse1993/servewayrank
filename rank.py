@@ -2159,7 +2159,7 @@ def page_view_double_ranking():
             margin-bottom: 20px;
         }
         </style>
-        <div class="ranking-header">Double RANKING</div>
+        <div class="ranking-header">DOUBLE RATE</div>
     """, unsafe_allow_html=True)
 
     # 랭킹에 따른 배경색 설정
@@ -2177,9 +2177,6 @@ def page_view_double_ranking():
     
     if conn is not None:
         cur = conn.cursor()
-        
-        # Streamlit 페이지 설정
-        st.title('복식 파트너별 승률')
 
         # 스타일링
         st.markdown("""
