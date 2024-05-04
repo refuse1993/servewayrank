@@ -2289,7 +2289,7 @@ def page_view_double_ranking():
                         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
                     }}
                     .win-rate {{
-                        font-size: 24px; /* 큰 글꼴 크기 */
+                        font-size: 20px; /* 큰 글꼴 크기 */
                         font-weight: bold;
                         padding: 10px;
                         color: {win_rate_color};
@@ -2308,13 +2308,13 @@ def page_view_double_ranking():
                         margin-left: 20px;
                     }}
                     .player-title {{
-                        font-size: 16px;
+                        font-size: 13px;
                         color: #F0E68C;
                         font-weight: bold;
                         font-style: italic;
                     }}
                     .player-name-1 {{
-                        font-size: 18px;
+                        font-size: 14px;
                         color: #ffffff;
                         font-weight: bold;
                         margin-top: 5px;
