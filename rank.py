@@ -2313,7 +2313,9 @@ def page_view_double_ranking():
             st.markdown(f"""
                 <div class="ranking-row-{index}">
                     <div class="player-level-box">{total_games} 게임</div>
-                    <div class="win-rate" style="color: {win_rate_color};">{win_rate:.0f}%</div>
+                    <div class="player-info">
+                        <div class="player-title">승률</div>
+                        <div class="player-name" style="color: {win_rate_color};">{win_rate:.0f}%</div></div>
                     <div class="player-info">
                         <div class="player-title">with</div>
                         <div class="player-name">{partner_name}</div>
