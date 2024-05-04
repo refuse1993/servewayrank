@@ -2223,9 +2223,6 @@ def page_view_double_ranking():
         """
         matches = pd.read_sql(match_query, conn)
 
-
-
-                    
         # 파트너 조합별 승리 계산
         partners = {}
         for _, row in matches.iterrows():
@@ -2252,11 +2249,10 @@ def page_view_double_ranking():
         selected_player_partners = {team: rec for team, rec in partners.items() if selected_player_id in team}
         sorted_partners = sorted(selected_player_partners.items(), key=lambda x: x[1]['wins'] / (x[1]['wins'] + x[1]['losses']), reverse=True)
 
-        
         # 승률 및 성적 출력
         for index, (team, record) in enumerate(sorted_partners):
-                           
             win_rate = (record['wins'] / (record['wins'] + record['losses'])) * 100
+            total_games = record['wins'] + record['losses']  # 총 경기 수 계산
             # 승률에 따른 색상 조정
             win_rate_color = "#FFD700" if win_rate >= 50 else "#FF6347"  # 금색 또는 토마토색 사용
 
@@ -2286,6 +2282,7 @@ def page_view_double_ranking():
                     .win-rate {{
                         font-size: 24px; /* 큰 글꼴 크기 */
                         font-weight: bold;
+                        padding: 10px;
                         color: {win_rate_color};
                     }}
                     .player-info {{
@@ -2315,6 +2312,7 @@ def page_view_double_ranking():
             # HTML과 CSS를 사용하여 커스텀 스타일링 적용
             st.markdown(f"""
                 <div class="ranking-row-{index}">
+                    <div class="player-level-box">{total_games} 게임</div>
                     <div class="win-rate" style="color: {win_rate_color};">{win_rate:.0f}%</div>
                     <div class="player-info">
                         <div class="player-title">with</div>
