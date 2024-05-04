@@ -2258,8 +2258,7 @@ def page_view_double_ranking():
                         border: 1px solid #444444;
                         border-radius: 5px;
                         font-size: 18px;
-                        text-align: center;
-                        margin-bottom: 10px;">
+                        text-align: center;">
                 <strong>BEST DUO 3</strong>
             </div>
         """, unsafe_allow_html=True)
